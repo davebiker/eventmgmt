@@ -302,6 +302,16 @@ select.inp option{background:#fff;color:#0a1f18}
   .xd-title{font-size:32px}
 }
 
+/* ── GLOBAL NAV ── */
+.gnav{padding:12px 20px;display:flex;align-items:center;justify-content:space-between;max-width:1100px;margin:0 auto;gap:10px}
+.gnav-logo{display:flex;align-items:center;gap:8px;cursor:pointer}
+.gnav-btns{display:flex;gap:6px;flex-wrap:wrap}
+.gnav-btn{display:flex;align-items:center;gap:5px;background:var(--surface);color:var(--emerald);border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.gnav-btn:hover{border-color:var(--emerald);box-shadow:0 2px 8px rgba(14,58,47,.1)}
+.gnav-btn.active{background:var(--emerald);color:var(--electric);border-color:var(--emerald)}
+.gnav-btn-primary{background:var(--emerald);color:var(--electric);border-color:var(--emerald);box-shadow:0 2px 8px rgba(14,58,47,.2)}
+.gnav-btn-primary:hover{background:#071f18;box-shadow:0 4px 12px rgba(14,58,47,.3)}
+
 /* ── CONTACTS DB ── */
 .cdb-wrap{max-width:1100px;margin:0 auto;min-height:100vh;padding:0 20px 60px}
 .cdb-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
@@ -580,6 +590,11 @@ function r() {
   const app = document.getElementById('app');
   app.innerHTML = '';
 
+  // Global nav on all pages
+  if (EVENTS.length > 0) {
+    app.appendChild(mkGlobalNav());
+  }
+
   // CONTACTS DATABASE
   if (VIEW_MODE === 'contactsdb') {
     app.appendChild(screenContactsDB());
@@ -694,6 +709,23 @@ function kpiInput(id, value, onchange) {
     onfocus="this.value=this.value.replace(/\\s/g,'')"
     onblur="this.value=(+this.value.replace(/\\s/g,'').replace(/,/g,'.')||0).toLocaleString('cs-CZ')"
     oninput="${onchange}" min="0">`;
+}
+
+function mkGlobalNav() {
+  const d = document.createElement('div');
+  d.className = 'gnav';
+  d.innerHTML = `
+    <div class="gnav-logo" onclick="backToList()">
+      <div class="logo-sq"><span>EM</span></div>
+      <span class="logo-text">Event Management</span>
+    </div>
+    <div class="gnav-btns">
+      <button class="gnav-btn ${VIEW_MODE==='dashboard'?'active':''}" onclick="openDashboard()">📊 Dashboard</button>
+      <button class="gnav-btn ${VIEW_MODE==='contactsdb'?'active':''}" onclick="openContactsDB()">👥 Kontakty</button>
+      <button class="gnav-btn gnav-btn-primary" onclick="newEvent()">+ Nový event</button>
+    </div>
+  `;
+  return d;
 }
 
 function canAdvance() { return true; }
@@ -846,31 +878,11 @@ function screenContactsDB() {
   const tierC = allContacts.filter(c=>c.tier==='C').length;
 
   wrap.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px;flex-wrap:wrap;gap:10px">
-      <div>
-        <button onclick="backToList()" style="
-          background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
-          cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;margin-bottom:6px">
-          ← Zpět na eventy
-        </button>
-        <div style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--text)">👥 Databáze kontaktů</div>
-      </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;flex-wrap:wrap;gap:10px">
+      <div style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--text)">👥 Databáze kontaktů</div>
       <div style="display:flex;gap:8px">
-        <button onclick="openAddContact()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--emerald);color:var(--electric);
-          border:none;border-radius:8px;padding:9px 14px;
-          font-size:13px;font-weight:700;cursor:pointer;
-          box-shadow:0 2px 8px rgba(14,58,47,.2);">
-          + Přidat kontakt
-        </button>
-        <button onclick="cdbExportCSV()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--surface);color:var(--emerald);
-          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-          font-size:12px;font-weight:700;cursor:pointer;">
-          📥 Export CSV
-        </button>
+        <button class="gnav-btn gnav-btn-primary" onclick="openAddContact()">+ Přidat kontakt</button>
+        <button class="gnav-btn" onclick="cdbExportCSV()">📥 Export CSV</button>
       </div>
     </div>
 
@@ -996,15 +1008,7 @@ function screenAddContact() {
   const addedCount = selEv ? selEv.contacts.length : 0;
 
   wrap.innerHTML = `
-    <div style="padding:16px 0 8px">
-      <button onclick="backToList()" style="
-        background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
-        cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
-        ← Zpět na eventy
-      </button>
-    </div>
-
-    <div style="margin-bottom:20px">
+    <div style="margin-bottom:20px;padding-top:8px">
       <div class="step-title" style="margin-bottom:4px">Přidat kontakt</div>
       <div class="step-desc" style="margin-bottom:0">${addedCount} kontaktů${selEv ? ' · '+selEv.event.name : ''}</div>
     </div>
@@ -1072,7 +1076,6 @@ function screenAddContact() {
     </div>
 
     <div style="display:flex;gap:8px">
-      <button class="btn-back" onclick="backToList()" style="padding:13px 20px">Zrušit</button>
       <button class="btn-next" ${!canAdd?'disabled':''} onclick="submitContactFromHP()" style="flex:1">Přidat kontakt</button>
     </div>
   `;
@@ -1137,30 +1140,8 @@ function screenCrossDashboard() {
 
   wrap.innerHTML = `
     <div class="xd-top">
-      <div>
-        <button onclick="backToList()" style="
-          background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
-          cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;margin-bottom:6px">
-          ← Všechny eventy
-        </button>
-        <div class="xd-title">📊 Dashboard</div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <button onclick="openContactsDB()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--surface);color:var(--emerald);
-          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-          font-size:12px;font-weight:700;cursor:pointer;">
-          👥 Kontakty
-        </button>
-        <button onclick="exportCSV()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--surface);color:var(--emerald);
-          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-          font-size:12px;font-weight:700;cursor:pointer;">
-          📥 Export CSV
-        </button>
-      </div>
+      <div class="xd-title">📊 Dashboard</div>
+      <button onclick="exportCSV()" class="gnav-btn">📥 Export CSV</button>
     </div>
 
     <!-- Top stats -->
@@ -1371,38 +1352,7 @@ function screenList() {
   // header
   const header = document.createElement('div');
   header.style.cssText = 'padding:20px 20px 0;max-width:1100px';
-  header.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <div class="logo-mark">
-        <div class="logo-sq"><span>EM</span></div>
-        <span class="logo-text">Event Management</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${EVENTS.length > 0 ? `<button onclick="openDashboard()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--surface);color:var(--emerald);
-          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-          font-size:13px;font-weight:700;cursor:pointer;">
-          📊 Dashboard
-        </button>` : ''}
-        ${EVENTS.length > 0 ? `<button onclick="openContactsDB()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--surface);color:var(--emerald);
-          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-          font-size:13px;font-weight:700;cursor:pointer;">
-          👥 Kontakty
-        </button>` : ''}
-        <button onclick="newEvent()" style="
-          display:flex;align-items:center;gap:5px;
-          background:var(--emerald);color:var(--electric);
-          border:none;border-radius:8px;padding:9px 14px;
-          font-size:13px;font-weight:700;cursor:pointer;
-          box-shadow:0 2px 8px rgba(14,58,47,.2);">
-          + Nový event
-        </button>
-      </div>
-    </div>
-  `;
+  header.innerHTML = '';
   wrap.appendChild(header);
 
   const content = document.createElement('div');
@@ -1516,15 +1466,6 @@ function screenSummary() {
   const scoreColor = score === null ? 'var(--muted)' : score >= 90 ? 'var(--emerald)' : score >= 60 ? '#d97706' : '#dc2626';
 
   wrap.innerHTML = `
-    <!-- Back nav -->
-    <div style="padding:16px 0 8px">
-      <button onclick="backToList()" style="
-        background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
-        cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
-        ← Všechny eventy
-      </button>
-    </div>
-
     <!-- Header -->
     <div class="sum-header">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
