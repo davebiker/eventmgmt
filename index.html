@@ -252,6 +252,32 @@ select.inp option{background:#fff;color:#0a1f18}
   .stat-val{font-size:20px}
 }
 
+/* ── DESKTOP ── */
+@media(min-width:768px){
+  #app{max-width:900px}
+  .content{padding:28px 40px 0}
+  .topbar{padding:20px 40px 0}
+  .prog-wrap{padding:18px 40px 0}
+  .nav-bar{padding:20px 40px}
+  .intro-hero{padding:40px 36px}
+  .intro-hero-title{font-size:34px}
+  .intro-hero-sub{font-size:15px;max-width:500px}
+  .step-title{font-size:32px}
+  .step-desc{font-size:15px}
+  .card{padding:20px}
+  .stat-grid{grid-template-columns:repeat(3,1fr);gap:12px}
+  .modal-sheet{max-width:640px;border-radius:20px;margin-bottom:40px;align-self:center}
+  .modal-overlay{align-items:center}
+  .ev-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .ev-card-grid .ev-card{margin-bottom:0}
+}
+@media(min-width:1100px){
+  #app{max-width:1100px}
+  .ev-card-grid{grid-template-columns:repeat(3,1fr)}
+  .stat-grid{grid-template-columns:repeat(3,1fr);gap:16px}
+  .intro-hero-title{font-size:38px}
+}
+
 </style>
 </head>
 <body>
@@ -382,6 +408,26 @@ function save() {
 function loadAll() {
   try { EVENTS = JSON.parse(localStorage.getItem('em_events') || '[]'); }
   catch { EVENTS = []; }
+  // seed dummy events on first visit
+  if (EVENTS.length === 0 && !localStorage.getItem('em_seeded')) {
+    const dummies = [
+      {name:'Move London 2026', city:'London', dateFrom:'2026-06-15', type:'Konference'},
+      {name:'Innoday 2026', city:'Praha', dateFrom:'2026-09-22', type:'Workshop'},
+      {name:'Websummit 2026', city:'Lisbon', dateFrom:'2026-11-04', type:'Konference'},
+    ];
+    dummies.forEach(d => {
+      const id = (Date.now() + Math.random()*1000).toFixed(0);
+      const ev = newEventState(id);
+      ev.event.name = d.name;
+      ev.event.city = d.city;
+      ev.event.dateFrom = d.dateFrom;
+      ev.event.type = d.type;
+      ev.step = 1;
+      EVENTS.push(ev);
+    });
+    localStorage.setItem('em_seeded', '1');
+    save();
+  }
 }
 
 function openEvent(id) {
@@ -526,11 +572,11 @@ window.backToList = backToList;
 // ════════════════════════════════════════════
 function screenList() {
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:60px';
+  wrap.style.cssText = 'max-width:1100px;margin:0 auto;min-height:100vh;padding-bottom:60px';
 
   // header
   const header = document.createElement('div');
-  header.style.cssText = 'padding:20px 20px 0';
+  header.style.cssText = 'padding:20px 20px 0;max-width:1100px';
   header.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
       <div class="logo-mark">
@@ -573,6 +619,7 @@ function screenList() {
       <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">
         ${EVENTS.length} event${EVENTS.length>1?'y/ů':''}
       </div>
+      <div class="ev-card-grid">
       ${sorted.map(ev => {
         const st = eventStatus(ev);
         const tierA = ev.contacts.filter(c=>c.tier==='A').length;
@@ -609,6 +656,7 @@ function screenList() {
           <div style="font-size:10px;color:var(--muted);margin-top:4px">Krok ${ev.step} / ${STEPS.length-1}</div>
         </div>`;
       }).join('')}
+      </div>
     `;
   }
 
