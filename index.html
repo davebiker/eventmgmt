@@ -641,7 +641,7 @@ function mkNav() {
   d.innerHTML = `
     <button class="btn-back" onclick="back()">← Zpět</button>
     ${last
-      ? `<button class="btn-finish" onclick="toast('Uloženo ✓','ok')">Uložit</button><button class="btn-back" onclick="backToList()" style="margin-left:0">← Lista</button>`
+      ? `<button class="btn-finish" onclick="toast('Uloženo ✓','ok')">Uložit</button><button class="btn-back" onclick="backToList()" style="margin-left:0">← Dashboard</button>`
       : `<button class="btn-next" onclick="next()">${S.step === STEPS.length - 2 ? 'Zobrazit dashboard →' : 'Pokračovat →'}</button>`
     }
   `;
