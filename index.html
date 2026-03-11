@@ -246,19 +246,19 @@ select.inp option{background:#fff;color:#0a1f18}
 /* ── SUMMARY ── */
 .sum-header{background:var(--emerald);border-radius:var(--rl);padding:28px 24px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden}
 .sum-header::before{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;background:rgba(120,250,174,.08);border-radius:50%}
-.sum-header .sum-name{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.15;margin-bottom:6px}
-.sum-header .sum-meta{font-size:13px;opacity:.8;display:flex;gap:12px;flex-wrap:wrap}
-.sum-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
-.sum-section-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
-.sum-section-title .sum-edit{font-size:11px;letter-spacing:0;text-transform:none;color:var(--emerald);cursor:pointer;font-weight:600}
-.sum-section-title .sum-edit:hover{text-decoration:underline}
-.sum-mini-stat{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
-.sum-mini-stat .sm-box{flex:1;min-width:80px;background:var(--surface2);border-radius:var(--r);padding:10px;text-align:center}
-.sm-box .sm-val{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1}
-.sm-box .sm-lbl{font-size:10px;color:var(--muted);margin-top:2px}
-.sum-bar{height:6px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:6px}
+.sum-header .sum-name{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.15;margin-bottom:8px}
+.sum-header .sum-meta{font-size:14px;opacity:.85;display:flex;gap:14px;flex-wrap:wrap}
+.sum-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.sum-section-title{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.sum-section-title .sum-edit{font-size:12px;letter-spacing:0;text-transform:none;color:var(--emerald);cursor:pointer;font-weight:600;padding:4px 8px;border-radius:6px;transition:background .15s}
+.sum-section-title .sum-edit:hover{background:var(--electric-lt);text-decoration:none}
+.sum-mini-stat{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.sum-mini-stat .sm-box{flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px 12px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.sm-box .sm-val{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1}
+.sm-box .sm-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500}
+.sum-bar{height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:6px}
 .sum-bar-fill{height:100%;border-radius:4px;transition:width .3s}
-.sum-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.sum-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 .sum-actions button{flex:1;min-width:120px}
 
 /* ── CROSS-EVENT DASHBOARD ── */
@@ -384,9 +384,15 @@ select.inp option{background:#fff;color:#0a1f18}
   .modal-overlay{align-items:center}
   .ev-card-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   .ev-card-grid .ev-card{margin-bottom:0}
+  .sum-header{padding:36px 32px}
   .sum-header .sum-name{font-size:32px}
-  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sum-header .sum-meta{font-size:15px;gap:18px}
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   .sum-grid .sum-full{grid-column:1/-1}
+  .sum-section{padding:22px}
+  .sum-mini-stat .sm-box{padding:20px 16px}
+  .sm-box .sm-val{font-size:30px}
+  .sm-box .sm-lbl{font-size:12px}
   .kpi-result-actual{width:120px}
 }
 @media(min-width:1100px){
@@ -394,7 +400,10 @@ select.inp option{background:#fff;color:#0a1f18}
   .ev-card-grid{grid-template-columns:repeat(3,1fr)}
   .stat-grid{grid-template-columns:repeat(3,1fr);gap:16px}
   .intro-hero-title{font-size:38px}
-  .sum-header .sum-name{font-size:36px}
+  .sum-header{padding:44px 40px}
+  .sum-header .sum-name{font-size:38px}
+  .sum-section{padding:24px}
+  .sum-mini-stat{gap:14px}
 }
 
 </style>
@@ -1482,9 +1491,9 @@ function screenSummary() {
   wrap.innerHTML = `
     <!-- Header -->
     <div class="sum-header">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;background:${st.color};color:${st.text}">${st.label}</span>
-        ${typeLabels ? `<span style="font-size:11px;opacity:.9">${typeLabels}</span>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:8px;background:${st.color};color:${st.text}">${st.label}</span>
+        ${typeLabels ? `<span style="font-size:13px;opacity:.9">${typeLabels}</span>` : ''}
       </div>
       <div class="sum-name">${e.name || 'Bez názvu'}</div>
       <div class="sum-meta">
@@ -1524,15 +1533,15 @@ function screenSummary() {
           Rozhodnutí
           <span class="sum-edit" onclick="editEvent('${ev.id}',2)">Upravit →</span>
         </div>
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-          ${ev.goNogo === 'go' ? '<span style="font-size:13px;font-weight:700;color:var(--emerald)">✅ Jedeme!</span>'
-            : ev.goNogo === 'nogo' ? '<span style="font-size:13px;font-weight:700;color:var(--red)">❌ Nejedeme</span>'
-            : '<span style="font-size:13px;color:var(--muted)">Nerozhodnuto</span>'}
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          ${ev.goNogo === 'go' ? '<span style="font-size:15px;font-weight:700;color:var(--emerald)">✅ Jedeme!</span>'
+            : ev.goNogo === 'nogo' ? '<span style="font-size:15px;font-weight:700;color:var(--red)">❌ Nejedeme</span>'
+            : '<span style="font-size:14px;color:var(--muted)">Nerozhodnuto</span>'}
         </div>
-        <div style="font-size:12px;color:var(--muted);line-height:1.5">
+        <div style="font-size:13px;color:var(--muted);line-height:1.6">
           Odpovězeno ${totalAnswered}/${META_QS.length}: ✅ ${yesCount}× Ano ${noCount > 0 ? '· ❌ '+noCount+'× Ne' : ''}
         </div>
-        ${ev.metaWhy ? `<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--rs);font-size:12px;color:var(--text2);line-height:1.5;font-style:italic">"${ev.metaWhy}"</div>` : ''}
+        ${ev.metaWhy ? `<div style="margin-top:10px;padding:10px 14px;background:var(--surface2);border-radius:var(--r);font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">"${ev.metaWhy}"</div>` : ''}
       </div>
 
       <!-- KPI section -->
@@ -1541,17 +1550,17 @@ function screenSummary() {
           KPI Plán vs. Skutečnost
           <span class="sum-edit" onclick="editEvent('${ev.id}',7)">Upravit →</span>
         </div>
-        ${kpis.length === 0 ? '<div style="font-size:12px;color:var(--muted)">Nejprve vyber typ účasti v kroku 3.</div>' : `
+        ${kpis.length === 0 ? '<div style="font-size:13px;color:var(--muted)">Nejprve vyber typ účasti v kroku 3.</div>' : `
           ${kpis.map(k => {
             const plan = ev.kpiPlan[k.id] ?? k.plan;
             const actual = ev.kpiActual[k.id];
             const hasActual = actual !== '' && actual !== undefined;
             const ratio = hasActual ? +actual / plan : null;
             const barColor = ratio === null ? 'var(--surface3)' : ratio >= 1 ? 'var(--electric)' : ratio >= 0.7 ? '#fbbf24' : '#f87171';
-            return `<div style="margin-bottom:8px">
-              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
-                <span style="color:var(--text);font-weight:500">${k.label}</span>
-                <span style="color:var(--muted)">${hasActual ? actual+' / '+plan : 'cíl: '+plan} ${k.unit}</span>
+            return `<div style="margin-bottom:10px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+                <span style="color:var(--text);font-weight:600">${k.label}</span>
+                <span style="color:var(--muted);font-size:12px">${hasActual ? actual+' / '+plan : 'cíl: '+plan} ${k.unit}</span>
               </div>
               <div class="sum-bar">
                 <div class="sum-bar-fill" style="background:${barColor};width:${ratio !== null ? Math.min(ratio*100,100) : 0}%"></div>
@@ -1567,45 +1576,45 @@ function screenSummary() {
           Kontakty (${cs.length})
           <span class="sum-edit" onclick="editEvent('${ev.id}',5)">Upravit →</span>
         </div>
-        ${cs.length === 0 ? '<div style="font-size:12px;color:var(--muted)">Zatím žádné kontakty.</div>' : `
-          <div style="display:flex;gap:8px;margin-bottom:10px">
-            ${tierA > 0 ? `<span style="font-size:11px;background:var(--electric-lt);color:var(--emerald);padding:3px 9px;border-radius:8px;font-weight:600">Tier A: ${tierA}</span>` : ''}
-            ${tierB > 0 ? `<span style="font-size:11px;background:var(--yellow-lt);color:var(--yellow);padding:3px 9px;border-radius:8px;font-weight:600">Tier B: ${tierB}</span>` : ''}
-            ${tierC > 0 ? `<span style="font-size:11px;background:var(--surface3);color:var(--muted);padding:3px 9px;border-radius:8px;font-weight:600">Tier C: ${tierC}</span>` : ''}
+        ${cs.length === 0 ? '<div style="font-size:13px;color:var(--muted)">Zatím žádné kontakty.</div>' : `
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            ${tierA > 0 ? `<span style="font-size:12px;background:var(--electric-lt);color:var(--emerald);padding:4px 12px;border-radius:8px;font-weight:600">Tier A: ${tierA}</span>` : ''}
+            ${tierB > 0 ? `<span style="font-size:12px;background:var(--yellow-lt);color:var(--yellow);padding:4px 12px;border-radius:8px;font-weight:600">Tier B: ${tierB}</span>` : ''}
+            ${tierC > 0 ? `<span style="font-size:12px;background:var(--surface3);color:var(--muted);padding:4px 12px;border-radius:8px;font-weight:600">Tier C: ${tierC}</span>` : ''}
           </div>
           ${cs.slice(0,5).map(c => `
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
-              <span class="bdg ${({A:'bdg-A',B:'bdg-B',C:'bdg-C'})[c.tier]||'bdg-C'}" style="font-size:9px">${c.tier}</span>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span class="bdg ${({A:'bdg-A',B:'bdg-B',C:'bdg-C'})[c.tier]||'bdg-C'}" style="font-size:10px;padding:4px 10px">${c.tier}</span>
               <span style="font-weight:600;color:var(--text)">${c.name}</span>
-              <span style="color:var(--muted)">${[c.role,c.company].filter(Boolean).join(' · ')}</span>
+              <span style="color:var(--muted);font-size:12px">${[c.role,c.company].filter(Boolean).join(' · ')}</span>
             </div>
           `).join('')}
-          ${cs.length > 5 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;cursor:pointer" onclick="editEvent('${ev.id}',5)">+ dalších ${cs.length-5} kontaktů →</div>` : ''}
+          ${cs.length > 5 ? `<div style="font-size:12px;color:var(--emerald);margin-top:8px;cursor:pointer;font-weight:600" onclick="editEvent('${ev.id}',5)">+ dalších ${cs.length-5} kontaktů →</div>` : ''}
         `}
       </div>
 
       <!-- Checklists section -->
       <div class="sum-section">
         <div class="sum-section-title">Checklisty</div>
-        <div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-            <span style="color:var(--text);font-weight:500">Příprava</span>
-            <span style="color:var(--muted)">${prepDone} / ${prepItems.length}</span>
+        <div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+            <span style="color:var(--text);font-weight:600">Příprava</span>
+            <span style="color:var(--muted);font-size:13px;font-weight:600">${prepDone} / ${prepItems.length}</span>
           </div>
           <div class="sum-bar">
             <div class="sum-bar-fill" style="background:var(--electric);width:${prepItems.length ? Math.round(prepDone/prepItems.length*100) : 0}%"></div>
           </div>
-          <div style="text-align:right;margin-top:4px"><span class="sum-edit" onclick="editEvent('${ev.id}',4)">Upravit →</span></div>
+          <div style="text-align:right;margin-top:6px"><span class="sum-edit" onclick="editEvent('${ev.id}',4)">Upravit →</span></div>
         </div>
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-            <span style="color:var(--text);font-weight:500">Follow-up</span>
-            <span style="color:var(--muted)">${fuDone} / ${FOLLOWUP_ITEMS.length}</span>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px">
+            <span style="color:var(--text);font-weight:600">Follow-up</span>
+            <span style="color:var(--muted);font-size:13px;font-weight:600">${fuDone} / ${FOLLOWUP_ITEMS.length}</span>
           </div>
           <div class="sum-bar">
             <div class="sum-bar-fill" style="background:var(--electric);width:${Math.round(fuDone/FOLLOWUP_ITEMS.length*100)}%"></div>
           </div>
-          <div style="text-align:right;margin-top:4px"><span class="sum-edit" onclick="editEvent('${ev.id}',6)">Upravit →</span></div>
+          <div style="text-align:right;margin-top:6px"><span class="sum-edit" onclick="editEvent('${ev.id}',6)">Upravit →</span></div>
         </div>
       </div>
 
@@ -1615,8 +1624,8 @@ function screenSummary() {
           Poznámky a doporučení
           <span class="sum-edit" onclick="editEvent('${ev.id}',7)">Upravit →</span>
         </div>
-        ${ev.recommendation ? `<div style="font-size:13px;color:var(--text2);line-height:1.6">${ev.recommendation}</div>`
-          : '<div style="font-size:12px;color:var(--muted)">Zatím žádné poznámky — přidej je v dashboardu.</div>'}
+        ${ev.recommendation ? `<div style="font-size:14px;color:var(--text2);line-height:1.7">${ev.recommendation}</div>`
+          : '<div style="font-size:13px;color:var(--muted)">Zatím žádné poznámky — přidej je v dashboardu.</div>'}
       </div>
 
     </div>
