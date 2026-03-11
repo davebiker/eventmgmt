@@ -50,16 +50,16 @@ input,textarea,select{font-family:inherit;outline:none;-webkit-tap-highlight-col
 .logo-text{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text)}
 
 /* ── PROGRESS ── */
-.prog-wrap{padding:14px 20px 0}
-.prog-track{height:3px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.prog-wrap{padding:16px 20px 0}
+.prog-track{height:5px;background:var(--surface3);border-radius:4px;overflow:hidden}
 .prog-fill{height:100%;background:var(--electric);border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
-.step-labels{display:flex;justify-content:space-between;margin-top:6px}
-.step-dot{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
-.step-dot-circle{width:7px;height:7px;border-radius:50%;background:var(--surface3);transition:all .3s}
-.step-dot-circle.done{background:var(--electric)}
-.step-dot-circle.active{background:var(--electric);box-shadow:0 0 0 3px rgba(120,250,174,.3)}
-.step-dot-label{font-size:9px;color:var(--muted);letter-spacing:.3px;text-align:center;white-space:nowrap}
-.step-dot.active .step-dot-label{color:var(--emerald);font-weight:600}
+.step-labels{display:flex;justify-content:space-between;margin-top:10px}
+.step-dot{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1}
+.step-dot-circle{width:12px;height:12px;border-radius:50%;background:var(--surface3);transition:all .3s;border:2px solid var(--border)}
+.step-dot-circle.done{background:var(--electric);border-color:var(--electric-dk)}
+.step-dot-circle.active{background:var(--electric);border-color:var(--electric-dk);box-shadow:0 0 0 4px rgba(120,250,174,.3)}
+.step-dot-label{font-size:12px;color:var(--muted);letter-spacing:.2px;text-align:center;white-space:nowrap}
+.step-dot.active .step-dot-label{color:var(--emerald);font-weight:700}
 
 /* ── CONTENT ── */
 .content{padding:20px 20px 0;flex:1;animation:fadeUp .3s ease}
@@ -360,7 +360,7 @@ select.inp option{background:#fff;color:#0a1f18}
 @media(max-width:380px){
   .step-title{font-size:22px}
   .intro-hero-title{font-size:22px}
-  .step-dot-label{display:none}
+  .step-dot-label{font-size:10px}
   .kpi-unit{width:60px}
   .stat-val{font-size:20px}
   .gnav-btn{padding:6px 8px;font-size:10px}
