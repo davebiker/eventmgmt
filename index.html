@@ -121,7 +121,7 @@ select.inp option{background:#fff;color:#0a1f18}
 .kpi-row:last-child{border-bottom:none;padding-bottom:0}
 .kpi-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
 .kpi-sub{font-size:11px;color:var(--muted);font-weight:400;display:block;margin-top:1px}
-.kpi-input{width:68px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:6px 9px;color:var(--text);font-size:16px;font-weight:600;text-align:center;transition:all .15s;flex-shrink:0}
+.kpi-input{width:110px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:16px;font-weight:600;text-align:right;transition:all .15s;flex-shrink:0}
 .kpi-input:focus{border-color:var(--emerald);background:#fff}
 .kpi-unit{font-size:11px;color:var(--muted);white-space:nowrap;width:80px;padding-left:8px;flex-shrink:0}
 
@@ -171,8 +171,8 @@ select.inp option{background:#fff;color:#0a1f18}
 .kpi-result-row:last-child{border-bottom:none;padding-bottom:0}
 .kpi-result-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
 .kpi-result-plan{font-size:12px;color:var(--muted);min-width:50px;text-align:right}
-.kpi-result-actual{width:68px}
-.kpi-result-actual input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:5px 8px;color:var(--text);font-size:16px;font-weight:600;text-align:center}
+.kpi-result-actual{width:110px}
+.kpi-result-actual input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px;color:var(--text);font-size:16px;font-weight:600;text-align:right}
 .kpi-result-actual input:focus{border-color:var(--emerald)}
 .kpi-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;flex-shrink:0}
 .kpi-over{background:var(--electric-lt);color:var(--emerald)}
@@ -648,6 +648,22 @@ function mkNav() {
   return d;
 }
 
+// Number formatting helpers
+function fmtNum(n) {
+  if (n === '' || n === undefined || n === null) return '';
+  return Number(n).toLocaleString('cs-CZ');
+}
+function parseNum(s) {
+  return +(String(s).replace(/\s/g,'').replace(/,/g,'.')) || 0;
+}
+function kpiInput(id, value, onchange) {
+  const display = fmtNum(value);
+  return `<input class="kpi-input" type="text" inputmode="numeric" value="${display}"
+    onfocus="this.value=this.value.replace(/\\s/g,'')"
+    onblur="this.value=(+this.value.replace(/\\s/g,'').replace(/,/g,'.')||0).toLocaleString('cs-CZ')"
+    oninput="${onchange}" min="0">`;
+}
+
 function canAdvance() { return true; }
 function next() { if (S.step < STEPS.length - 1) { S.step++; save(); r(); window.scrollTo(0,0); } }
 function back() { if (S.step > 0) { S.step--; save(); r(); window.scrollTo(0,0); } }
@@ -659,6 +675,8 @@ function openDashboard() {
   r();
 }
 
+window.fmtNum = fmtNum;
+window.parseNum = parseNum;
 window.newEvent = newEvent;
 window.openEvent = openEvent;
 window.editEvent = editEvent;
@@ -1498,7 +1516,10 @@ function screenKPI() {
       ${kpis.map(k => `
         <div class="kpi-row">
           <div class="kpi-label">${k.label}<span class="kpi-sub">${k.sub}</span></div>
-          <input class="kpi-input" type="number" value="${S.kpiPlan[k.id] ?? k.plan}" oninput="S.kpiPlan['${k.id}']=+this.value" min="0">
+          <input class="kpi-input" type="text" inputmode="numeric" value="${fmtNum(S.kpiPlan[k.id] ?? k.plan)}"
+            onfocus="this.value=this.value.replace(/\\s/g,'')"
+            onblur="this.value=fmtNum(parseNum(this.value))"
+            oninput="S.kpiPlan['${k.id}']=parseNum(this.value)" min="0">
           <span class="kpi-unit">${k.unit}</span>
         </div>
       `).join('')}
@@ -1859,10 +1880,12 @@ function screenDashboard() {
         return `
           <div class="kpi-result-row">
             <div class="kpi-result-label">${k.label}<span class="kpi-sub">${k.sub}</span></div>
-            <div class="kpi-result-plan" style="font-size:11px;color:var(--muted)">cíl: ${plan} ${k.unit}</div>
+            <div class="kpi-result-plan" style="font-size:11px;color:var(--muted)">cíl: ${fmtNum(plan)} ${k.unit}</div>
             <div class="kpi-result-actual">
-              <input type="number" placeholder="?" value="${actual !== undefined ? actual : ''}"
-                oninput="S.kpiActual['${k.id}']=this.value;rerenderScore()" min="0">
+              <input type="text" inputmode="numeric" placeholder="?" value="${actual !== undefined && actual !== '' ? fmtNum(actual) : ''}"
+                onfocus="this.value=this.value.replace(/\\s/g,'')"
+                onblur="if(this.value)this.value=fmtNum(parseNum(this.value))"
+                oninput="S.kpiActual['${k.id}']=parseNum(this.value);rerenderScore()" min="0">
             </div>
             <div class="kpi-pill ${pillCls}">${pillTxt}</div>
           </div>`;
