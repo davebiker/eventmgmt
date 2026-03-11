@@ -302,6 +302,30 @@ select.inp option{background:#fff;color:#0a1f18}
   .xd-title{font-size:32px}
 }
 
+/* ── CONTACTS DB ── */
+.cdb-wrap{max-width:1100px;margin:0 auto;min-height:100vh;padding:0 20px 60px}
+.cdb-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.cdb-filters .inp{font-size:13px;padding:8px 12px;min-width:0}
+.cdb-filters select.inp{min-width:120px}
+.cdb-search{flex:2;min-width:180px}
+.cdb-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+.cdb-table th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:10px 10px;border-bottom:2px solid var(--border);background:var(--surface2);position:sticky;top:0;white-space:nowrap}
+.cdb-table td{font-size:12px;color:var(--text);padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+.cdb-table tr:last-child td{border-bottom:none}
+.cdb-table tr:hover td{background:var(--electric-lt)}
+.cdb-table .cdb-actions{display:flex;gap:4px}
+.cdb-table .cdb-btn{padding:4px 8px;border-radius:var(--rs);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);min-height:28px;touch-action:manipulation}
+.cdb-table .cdb-btn:hover{border-color:var(--emerald);color:var(--emerald)}
+.cdb-table .cdb-btn-del:hover{border-color:#ef4444;color:var(--red)}
+.cdb-edit-row td{background:var(--electric-lt)!important}
+.cdb-edit-row .inp{font-size:12px;padding:5px 8px}
+.cdb-stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.cdb-stat-chip{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--text)}
+.cdb-stat-chip span{color:var(--emerald)}
+@media(min-width:768px){
+  .cdb-table-wrap{overflow-x:auto;border-radius:var(--rl)}
+}
+
 /* ── RESPONSIVE ── */
 @media(max-width:380px){
   .step-title{font-size:22px}
@@ -438,8 +462,10 @@ const META_QS = [
 let EVENTS = [];
 let CURRENT_ID = null;
 let S = null;
-let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit' | 'dashboard' | 'addcontact'
+let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit' | 'dashboard' | 'addcontact' | 'contactsdb'
 let CONTACT_FORM = {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:'',eventId:''};
+let CDB_FILTERS = {search:'',event:'',tier:'',depth:'',opp:''};
+let CDB_EDIT = null; // {eventId, contactIdx} when editing inline
 
 function newEventState(id) {
   return {
@@ -553,6 +579,12 @@ function r() {
   if (S) save();
   const app = document.getElementById('app');
   app.innerHTML = '';
+
+  // CONTACTS DATABASE
+  if (VIEW_MODE === 'contactsdb') {
+    app.appendChild(screenContactsDB());
+    return;
+  }
 
   // ADD CONTACT (full page)
   if (VIEW_MODE === 'addcontact') {
@@ -701,6 +733,67 @@ function setCF(key, val) {
   r();
 }
 
+function openContactsDB() {
+  CURRENT_ID = null; S = null;
+  CDB_FILTERS = {search:'',event:'',tier:'',depth:'',opp:''};
+  CDB_EDIT = null;
+  VIEW_MODE = 'contactsdb';
+  r();
+}
+
+function cdbSetFilter(key, val) {
+  CDB_FILTERS[key] = val;
+  r();
+}
+
+function cdbStartEdit(eventId, idx) {
+  CDB_EDIT = {eventId, idx};
+  r();
+}
+
+function cdbSaveEdit(eventId, idx) {
+  save();
+  CDB_EDIT = null;
+  r();
+}
+
+function cdbCancelEdit() {
+  CDB_EDIT = null;
+  r();
+}
+
+function cdbDeleteContact(eventId, idx) {
+  const ev = EVENTS.find(e => e.id === eventId);
+  if (!ev) return;
+  ev.contacts.splice(idx, 1);
+  save();
+  CDB_EDIT = null;
+  r();
+}
+
+function cdbExportCSV() {
+  const allContacts = [];
+  EVENTS.forEach(ev => {
+    ev.contacts.forEach(c => {
+      allContacts.push({...c, eventName: ev.event.name, eventCity: ev.event.city, eventDate: ev.event.dateFrom});
+    });
+  });
+  const DEPTHS = {1:'Vizitka',2:'Rozhovor',3:'Next step'};
+  const header = ['Jméno','Email','Firma','Pozice','Tier','Hloubka','Příležitost','Event','Město','Datum'];
+  const rows = allContacts.map(c => [c.name,c.email,c.company,c.role,c.tier,DEPTHS[c.depth]||'',c.opp,c.eventName,c.eventCity,c.eventDate]);
+  const csv = [header,...rows].map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='kontakty-export.csv'; a.click(); URL.revokeObjectURL(url);
+}
+
+window.openContactsDB = openContactsDB;
+window.cdbSetFilter = cdbSetFilter;
+window.cdbStartEdit = cdbStartEdit;
+window.cdbSaveEdit = cdbSaveEdit;
+window.cdbCancelEdit = cdbCancelEdit;
+window.cdbDeleteContact = cdbDeleteContact;
+window.cdbExportCSV = cdbExportCSV;
 window.openAddContact = openAddContact;
 window.submitContactFromHP = submitContactFromHP;
 window.setCF = setCF;
@@ -713,6 +806,181 @@ window.deleteEvent = deleteEvent;
 window.backToList = backToList;
 window.backToSummary = backToSummary;
 window.openDashboard = openDashboard;
+
+// ════════════════════════════════════════════
+// CONTACTS DATABASE
+// ════════════════════════════════════════════
+function screenContactsDB() {
+  const wrap = document.createElement('div');
+  wrap.className = 'cdb-wrap';
+  const f = CDB_FILTERS;
+  const DEPTHS = {1:'🤝 Vizitka',2:'💬 Rozhovor',3:'🎯 Next step'};
+  const OPPS = ['Dohodnutá schůzka','Intro do firmy','Zájem o spolupráci','Zmínka v médiu','Partnership / pilot','Jiné'];
+
+  // Aggregate all contacts with event info
+  let allContacts = [];
+  EVENTS.forEach(ev => {
+    ev.contacts.forEach((c, idx) => {
+      allContacts.push({...c, eventId:ev.id, eventName:ev.event.name||'Bez názvu', eventCity:ev.event.city, eventDate:ev.event.dateFrom, _idx:idx});
+    });
+  });
+
+  // Apply filters
+  if (f.search) {
+    const q = f.search.toLowerCase();
+    allContacts = allContacts.filter(c =>
+      (c.name||'').toLowerCase().includes(q) ||
+      (c.company||'').toLowerCase().includes(q) ||
+      (c.role||'').toLowerCase().includes(q) ||
+      (c.email||'').toLowerCase().includes(q)
+    );
+  }
+  if (f.event) allContacts = allContacts.filter(c => c.eventId === f.event);
+  if (f.tier) allContacts = allContacts.filter(c => c.tier === f.tier);
+  if (f.depth) allContacts = allContacts.filter(c => c.depth === +f.depth);
+  if (f.opp) allContacts = allContacts.filter(c => c.opp === f.opp);
+
+  const totalAll = EVENTS.reduce((s,e) => s+e.contacts.length, 0);
+  const tierA = allContacts.filter(c=>c.tier==='A').length;
+  const tierB = allContacts.filter(c=>c.tier==='B').length;
+  const tierC = allContacts.filter(c=>c.tier==='C').length;
+
+  wrap.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px;flex-wrap:wrap;gap:10px">
+      <div>
+        <button onclick="backToList()" style="
+          background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
+          cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;margin-bottom:6px">
+          ← Zpět na eventy
+        </button>
+        <div style="font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--text)">👥 Databáze kontaktů</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="openAddContact()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--emerald);color:var(--electric);
+          border:none;border-radius:8px;padding:9px 14px;
+          font-size:13px;font-weight:700;cursor:pointer;
+          box-shadow:0 2px 8px rgba(14,58,47,.2);">
+          + Přidat kontakt
+        </button>
+        <button onclick="cdbExportCSV()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--surface);color:var(--emerald);
+          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+          font-size:12px;font-weight:700;cursor:pointer;">
+          📥 Export CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="cdb-stats">
+      <div class="cdb-stat-chip">Celkem: <span>${allContacts.length}</span>${allContacts.length !== totalAll ? ' / '+totalAll : ''}</div>
+      <div class="cdb-stat-chip">Tier A: <span>${tierA}</span></div>
+      <div class="cdb-stat-chip">Tier B: <span>${tierB}</span></div>
+      <div class="cdb-stat-chip">Tier C: <span>${tierC}</span></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="cdb-filters">
+      <input class="inp cdb-search" type="text" placeholder="🔍 Hledat jméno, firmu, pozici, email..."
+        value="${f.search}" oninput="cdbSetFilter('search',this.value)">
+      <select class="inp" onchange="cdbSetFilter('event',this.value)">
+        <option value="">Všechny eventy</option>
+        ${EVENTS.map(ev => `<option value="${ev.id}" ${f.event===ev.id?'selected':''}>${ev.event.name||'Bez názvu'}</option>`).join('')}
+      </select>
+      <select class="inp" onchange="cdbSetFilter('tier',this.value)">
+        <option value="">Všechny tiery</option>
+        <option value="A" ${f.tier==='A'?'selected':''}>Tier A</option>
+        <option value="B" ${f.tier==='B'?'selected':''}>Tier B</option>
+        <option value="C" ${f.tier==='C'?'selected':''}>Tier C</option>
+      </select>
+      <select class="inp" onchange="cdbSetFilter('depth',this.value)">
+        <option value="">Všechny hloubky</option>
+        <option value="1" ${f.depth==='1'?'selected':''}>🤝 Vizitka</option>
+        <option value="2" ${f.depth==='2'?'selected':''}>💬 Rozhovor</option>
+        <option value="3" ${f.depth==='3'?'selected':''}>🎯 Next step</option>
+      </select>
+      <select class="inp" onchange="cdbSetFilter('opp',this.value)">
+        <option value="">Všechny příležitosti</option>
+        ${OPPS.map(o => `<option value="${o}" ${f.opp===o?'selected':''}>${o}</option>`).join('')}
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="cdb-table-wrap">
+      <table class="cdb-table">
+        <thead>
+          <tr>
+            <th>Jméno</th>
+            <th>Email</th>
+            <th>Firma</th>
+            <th>Pozice</th>
+            <th>Tier</th>
+            <th>Hloubka</th>
+            <th>Příležitost</th>
+            <th>Event</th>
+            <th style="min-width:80px">Akce</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${allContacts.length === 0 ? `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">
+            ${totalAll === 0 ? 'Zatím žádné kontakty.' : 'Žádné kontakty neodpovídají filtrům.'}
+          </td></tr>` : ''}
+          ${allContacts.map(c => {
+            const isEditing = CDB_EDIT && CDB_EDIT.eventId === c.eventId && CDB_EDIT.idx === c._idx;
+            const ev = EVENTS.find(e => e.id === c.eventId);
+            const contact = ev ? ev.contacts[c._idx] : null;
+            if (isEditing && contact) {
+              return `<tr class="cdb-edit-row">
+                <td><input class="inp" value="${contact.name}" oninput="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].name=this.value"></td>
+                <td><input class="inp" type="email" value="${contact.email||''}" oninput="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].email=this.value"></td>
+                <td><input class="inp" value="${contact.company||''}" oninput="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].company=this.value"></td>
+                <td><input class="inp" value="${contact.role||''}" oninput="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].role=this.value"></td>
+                <td><select class="inp" onchange="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].tier=this.value">
+                  <option value="A" ${contact.tier==='A'?'selected':''}>A</option>
+                  <option value="B" ${contact.tier==='B'?'selected':''}>B</option>
+                  <option value="C" ${contact.tier==='C'?'selected':''}>C</option>
+                </select></td>
+                <td><select class="inp" onchange="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].depth=+this.value">
+                  <option value="1" ${contact.depth===1?'selected':''}>🤝</option>
+                  <option value="2" ${contact.depth===2?'selected':''}>💬</option>
+                  <option value="3" ${contact.depth===3?'selected':''}>🎯</option>
+                </select></td>
+                <td><select class="inp" onchange="EVENTS.find(e=>e.id==='${c.eventId}').contacts[${c._idx}].opp=this.value">
+                  <option value="">—</option>
+                  ${OPPS.map(o => `<option value="${o}" ${contact.opp===o?'selected':''}>${o}</option>`).join('')}
+                </select></td>
+                <td style="font-size:11px;color:var(--muted)">${c.eventName}</td>
+                <td class="cdb-actions">
+                  <button class="cdb-btn" onclick="cdbSaveEdit('${c.eventId}',${c._idx})">✓</button>
+                  <button class="cdb-btn" onclick="cdbCancelEdit()">✕</button>
+                </td>
+              </tr>`;
+            }
+            return `<tr>
+              <td style="font-weight:600">${c.name}</td>
+              <td style="color:var(--muted)">${c.email||'—'}</td>
+              <td>${c.company||'—'}</td>
+              <td style="color:var(--muted)">${c.role||'—'}</td>
+              <td><span class="bdg ${({A:'bdg-A',B:'bdg-B',C:'bdg-C'})[c.tier]||'bdg-C'}">${c.tier}</span></td>
+              <td>${DEPTHS[c.depth]||'—'}</td>
+              <td style="font-size:11px">${c.opp||'—'}</td>
+              <td style="font-size:11px;color:var(--muted)" title="${c.eventDate||''}">${c.eventName}</td>
+              <td class="cdb-actions">
+                <button class="cdb-btn" onclick="cdbStartEdit('${c.eventId}',${c._idx})" title="Upravit">✎</button>
+                <button class="cdb-btn cdb-btn-del" onclick="cdbDeleteContact('${c.eventId}',${c._idx})" title="Smazat">✕</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  return wrap;
+}
 
 // ════════════════════════════════════════════
 // ADD CONTACT (FULL PAGE)
@@ -877,13 +1145,22 @@ function screenCrossDashboard() {
         </button>
         <div class="xd-title">📊 Dashboard</div>
       </div>
-      <button onclick="exportCSV()" style="
-        display:flex;align-items:center;gap:5px;
-        background:var(--surface);color:var(--emerald);
-        border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
-        font-size:12px;font-weight:700;cursor:pointer;">
-        📥 Export CSV
-      </button>
+      <div style="display:flex;gap:8px">
+        <button onclick="openContactsDB()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--surface);color:var(--emerald);
+          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+          font-size:12px;font-weight:700;cursor:pointer;">
+          👥 Kontakty
+        </button>
+        <button onclick="exportCSV()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--surface);color:var(--emerald);
+          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+          font-size:12px;font-weight:700;cursor:pointer;">
+          📥 Export CSV
+        </button>
+      </div>
     </div>
 
     <!-- Top stats -->
@@ -1108,12 +1385,12 @@ function screenList() {
           font-size:13px;font-weight:700;cursor:pointer;">
           📊 Dashboard
         </button>` : ''}
-        ${EVENTS.length > 0 ? `<button onclick="openAddContact()" style="
+        ${EVENTS.length > 0 ? `<button onclick="openContactsDB()" style="
           display:flex;align-items:center;gap:5px;
           background:var(--surface);color:var(--emerald);
           border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
           font-size:13px;font-weight:700;cursor:pointer;">
-          + Kontakt
+          👥 Kontakty
         </button>` : ''}
         <button onclick="newEvent()" style="
           display:flex;align-items:center;gap:5px;
