@@ -243,6 +243,29 @@ select.inp option{background:#fff;color:#0a1f18}
 @media(hover:hover){.ev-card:hover{box-shadow:0 4px 16px rgba(14,58,47,.1);border-color:var(--bh)}}
 .ev-card:active{opacity:.85}
 
+/* ── SUMMARY ── */
+.sum-header{background:var(--emerald);border-radius:var(--rl);padding:28px 24px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden}
+.sum-header::before{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;background:rgba(120,250,174,.08);border-radius:50%}
+.sum-header .sum-name{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.15;margin-bottom:6px}
+.sum-header .sum-meta{font-size:13px;opacity:.8;display:flex;gap:12px;flex-wrap:wrap}
+.sum-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.sum-section-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.sum-section-title .sum-edit{font-size:11px;letter-spacing:0;text-transform:none;color:var(--emerald);cursor:pointer;font-weight:600}
+.sum-section-title .sum-edit:hover{text-decoration:underline}
+.sum-mini-stat{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.sum-mini-stat .sm-box{flex:1;min-width:80px;background:var(--surface2);border-radius:var(--r);padding:10px;text-align:center}
+.sm-box .sm-val{font-family:'Fraunces',serif;font-size:22px;font-weight:600;line-height:1}
+.sm-box .sm-lbl{font-size:10px;color:var(--muted);margin-top:2px}
+.sum-bar{height:6px;background:var(--surface3);border-radius:4px;overflow:hidden;margin-top:6px}
+.sum-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.sum-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.sum-actions button{flex:1;min-width:120px}
+@media(min-width:768px){
+  .sum-header .sum-name{font-size:32px}
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .sum-grid .sum-full{grid-column:1/-1}
+}
+
 /* ── RESPONSIVE ── */
 @media(max-width:380px){
   .step-title{font-size:22px}
@@ -379,6 +402,7 @@ const META_QS = [
 let EVENTS = [];
 let CURRENT_ID = null;
 let S = null;
+let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit'
 
 function newEventState(id) {
   return {
@@ -434,7 +458,18 @@ function openEvent(id) {
   CURRENT_ID = id;
   S = EVENTS.find(e => e.id === id);
   if (!S.toast) S.toast = null;
+  VIEW_MODE = 'summary';
   r();
+}
+
+function editEvent(id, step) {
+  CURRENT_ID = id;
+  S = EVENTS.find(e => e.id === id);
+  if (!S.toast) S.toast = null;
+  if (step !== undefined) S.step = step;
+  VIEW_MODE = 'edit';
+  r();
+  window.scrollTo(0,0);
 }
 
 function newEvent() {
@@ -442,7 +477,7 @@ function newEvent() {
   const ev = newEventState(id);
   EVENTS.push(ev);
   save();
-  openEvent(id);
+  editEvent(id, 0);
 }
 
 function deleteEvent(id) {
@@ -455,7 +490,14 @@ function deleteEvent(id) {
 function backToList() {
   CURRENT_ID = null;
   S = null;
+  VIEW_MODE = 'list';
   r();
+}
+
+function backToSummary() {
+  VIEW_MODE = 'summary';
+  r();
+  window.scrollTo(0,0);
 }
 
 function eventStatus(ev) {
@@ -476,12 +518,18 @@ function r() {
   app.innerHTML = '';
 
   // LIST VIEW
-  if (!CURRENT_ID) {
+  if (!CURRENT_ID || VIEW_MODE === 'list') {
     app.appendChild(screenList());
     return;
   }
 
-  // EVENT VIEW
+  // SUMMARY VIEW
+  if (VIEW_MODE === 'summary') {
+    app.appendChild(screenSummary());
+    return;
+  }
+
+  // EVENT EDIT VIEW
   app.appendChild(mkTopBar());
   if (S.step > 0) app.appendChild(mkProgress());
   const content = document.createElement('div');
@@ -502,10 +550,10 @@ function mkTopBar() {
   const d = document.createElement('div');
   d.className = 'topbar';
   d.innerHTML = `
-    <button onclick="backToList()" style="
+    <button onclick="backToSummary()" style="
       background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
       cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
-      ← Eventy
+      ← Přehled
     </button>
     <button onclick="openContactModal()" style="
       display:flex;align-items:center;gap:5px;
@@ -564,8 +612,10 @@ function back() { if (S.step > 0) { S.step--; save(); r(); window.scrollTo(0,0);
 function toast(msg, type='ok') { S.toast = {msg, type}; r(); }
 window.newEvent = newEvent;
 window.openEvent = openEvent;
+window.editEvent = editEvent;
 window.deleteEvent = deleteEvent;
 window.backToList = backToList;
+window.backToSummary = backToSummary;
 
 // ════════════════════════════════════════════
 // LIST SCREEN
@@ -661,6 +711,212 @@ function screenList() {
   }
 
   wrap.appendChild(content);
+  return wrap;
+}
+
+// ════════════════════════════════════════════
+// SUMMARY SCREEN
+// ════════════════════════════════════════════
+function screenSummary() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:900px;margin:0 auto;min-height:100vh;padding:0 20px 60px';
+
+  const ev = S;
+  const e = ev.event;
+  const st = eventStatus(ev);
+  const yesCount = Object.values(ev.metaAnswers).filter(v=>v==='y').length;
+  const noCount = Object.values(ev.metaAnswers).filter(v=>v==='n').length;
+  const totalAnswered = Object.keys(ev.metaAnswers).filter(k=>ev.metaAnswers[k]).length;
+  const typeLabels = ev.types.map(t=>({booth:'🏪 Booth',stage:'🎤 Stage',visitor:'👁 Visitor'}[t])).join(' + ');
+  const kpis = ev.types.flatMap(t => KPI_BY_TYPE[t] || []);
+  const cs = ev.contacts;
+  const tierA = cs.filter(c=>c.tier==='A').length;
+  const tierB = cs.filter(c=>c.tier==='B').length;
+  const tierC = cs.filter(c=>c.tier==='C').length;
+
+  // prep checklist progress
+  const seenPrep = new Set();
+  const prepItems = (ev.types.length ? ev.types : ['visitor'])
+    .flatMap(t => (CHECKLIST_BY_TYPE[t] || []))
+    .filter(i => { if (seenPrep.has(i.id)) return false; seenPrep.add(i.id); return true; });
+  const prepDone = prepItems.filter(i => ev.prepDone[i.id]).length;
+
+  // followup progress
+  const fuDone = FOLLOWUP_ITEMS.filter(i => ev.fuDone[i.id]).length;
+
+  // KPI score
+  const answered = kpis.filter(k => ev.kpiActual[k.id] !== '' && ev.kpiActual[k.id] !== undefined);
+  const score = answered.length
+    ? Math.round(answered.reduce((acc, k) => {
+        const plan = ev.kpiPlan[k.id] || k.plan;
+        const actual = +ev.kpiActual[k.id];
+        return acc + Math.min(actual / plan, 1.5);
+      }, 0) / answered.length * 100)
+    : null;
+  const scoreColor = score === null ? 'var(--muted)' : score >= 90 ? 'var(--emerald)' : score >= 60 ? '#d97706' : '#dc2626';
+
+  wrap.innerHTML = `
+    <!-- Back nav -->
+    <div style="padding:16px 0 8px">
+      <button onclick="backToList()" style="
+        background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
+        cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
+        ← Všechny eventy
+      </button>
+    </div>
+
+    <!-- Header -->
+    <div class="sum-header">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;background:${st.color};color:${st.text}">${st.label}</span>
+        ${typeLabels ? `<span style="font-size:11px;opacity:.9">${typeLabels}</span>` : ''}
+      </div>
+      <div class="sum-name">${e.name || 'Bez názvu'}</div>
+      <div class="sum-meta">
+        ${e.city ? `<span>📍 ${e.city}</span>` : ''}
+        ${e.dateFrom ? `<span>📅 ${e.dateFrom}${e.dateTo ? ' → '+e.dateTo : ''}</span>` : ''}
+        ${e.type ? `<span>🏷 ${e.type}</span>` : ''}
+        ${e.budget ? `<span>💰 ${e.budget} CZK</span>` : ''}
+        ${e.audience ? `<span>👥 ${e.audience} účastníků</span>` : ''}
+      </div>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="sum-mini-stat">
+      <div class="sm-box">
+        <div class="sm-val" style="color:var(--emerald)">${cs.length}</div>
+        <div class="sm-lbl">Kontaktů</div>
+      </div>
+      <div class="sm-box">
+        <div class="sm-val" style="color:var(--emerald)">${tierA}</div>
+        <div class="sm-lbl">Tier A</div>
+      </div>
+      <div class="sm-box">
+        <div class="sm-val" style="color:${scoreColor}">${score !== null ? score+'%' : '—'}</div>
+        <div class="sm-lbl">KPI skóre</div>
+      </div>
+      <div class="sm-box">
+        <div class="sm-val">${yesCount}/${META_QS.length}</div>
+        <div class="sm-lbl">Ano odpovědí</div>
+      </div>
+    </div>
+
+    <div class="sum-grid">
+
+      <!-- Decision section -->
+      <div class="sum-section">
+        <div class="sum-section-title">
+          Rozhodnutí
+          <span class="sum-edit" onclick="editEvent('${ev.id}',2)">Upravit →</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          ${ev.goNogo === 'go' ? '<span style="font-size:13px;font-weight:700;color:var(--emerald)">✅ Jedeme!</span>'
+            : ev.goNogo === 'nogo' ? '<span style="font-size:13px;font-weight:700;color:var(--red)">❌ Nejedeme</span>'
+            : '<span style="font-size:13px;color:var(--muted)">Nerozhodnuto</span>'}
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.5">
+          Odpovězeno ${totalAnswered}/${META_QS.length}: ✅ ${yesCount}× Ano ${noCount > 0 ? '· ❌ '+noCount+'× Ne' : ''}
+        </div>
+        ${ev.metaWhy ? `<div style="margin-top:8px;padding:8px 10px;background:var(--surface2);border-radius:var(--rs);font-size:12px;color:var(--text2);line-height:1.5;font-style:italic">"${ev.metaWhy}"</div>` : ''}
+      </div>
+
+      <!-- KPI section -->
+      <div class="sum-section">
+        <div class="sum-section-title">
+          KPI Plán vs. Skutečnost
+          <span class="sum-edit" onclick="editEvent('${ev.id}',7)">Upravit →</span>
+        </div>
+        ${kpis.length === 0 ? '<div style="font-size:12px;color:var(--muted)">Nejprve vyber typ účasti v kroku 3.</div>' : `
+          ${kpis.map(k => {
+            const plan = ev.kpiPlan[k.id] ?? k.plan;
+            const actual = ev.kpiActual[k.id];
+            const hasActual = actual !== '' && actual !== undefined;
+            const ratio = hasActual ? +actual / plan : null;
+            const barColor = ratio === null ? 'var(--surface3)' : ratio >= 1 ? 'var(--electric)' : ratio >= 0.7 ? '#fbbf24' : '#f87171';
+            return `<div style="margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px">
+                <span style="color:var(--text);font-weight:500">${k.label}</span>
+                <span style="color:var(--muted)">${hasActual ? actual+' / '+plan : 'cíl: '+plan} ${k.unit}</span>
+              </div>
+              <div class="sum-bar">
+                <div class="sum-bar-fill" style="background:${barColor};width:${ratio !== null ? Math.min(ratio*100,100) : 0}%"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        `}
+      </div>
+
+      <!-- Contacts section -->
+      <div class="sum-section">
+        <div class="sum-section-title">
+          Kontakty (${cs.length})
+          <span class="sum-edit" onclick="editEvent('${ev.id}',5)">Upravit →</span>
+        </div>
+        ${cs.length === 0 ? '<div style="font-size:12px;color:var(--muted)">Zatím žádné kontakty.</div>' : `
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            ${tierA > 0 ? `<span style="font-size:11px;background:var(--electric-lt);color:var(--emerald);padding:3px 9px;border-radius:8px;font-weight:600">Tier A: ${tierA}</span>` : ''}
+            ${tierB > 0 ? `<span style="font-size:11px;background:var(--yellow-lt);color:var(--yellow);padding:3px 9px;border-radius:8px;font-weight:600">Tier B: ${tierB}</span>` : ''}
+            ${tierC > 0 ? `<span style="font-size:11px;background:var(--surface3);color:var(--muted);padding:3px 9px;border-radius:8px;font-weight:600">Tier C: ${tierC}</span>` : ''}
+          </div>
+          ${cs.slice(0,5).map(c => `
+            <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px">
+              <span class="bdg ${({A:'bdg-A',B:'bdg-B',C:'bdg-C'})[c.tier]||'bdg-C'}" style="font-size:9px">${c.tier}</span>
+              <span style="font-weight:600;color:var(--text)">${c.name}</span>
+              <span style="color:var(--muted)">${[c.role,c.company].filter(Boolean).join(' · ')}</span>
+            </div>
+          `).join('')}
+          ${cs.length > 5 ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;cursor:pointer" onclick="editEvent('${ev.id}',5)">+ dalších ${cs.length-5} kontaktů →</div>` : ''}
+        `}
+      </div>
+
+      <!-- Checklists section -->
+      <div class="sum-section">
+        <div class="sum-section-title">Checklisty</div>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--text);font-weight:500">Příprava</span>
+            <span style="color:var(--muted)">${prepDone} / ${prepItems.length}</span>
+          </div>
+          <div class="sum-bar">
+            <div class="sum-bar-fill" style="background:var(--electric);width:${prepItems.length ? Math.round(prepDone/prepItems.length*100) : 0}%"></div>
+          </div>
+          <div style="text-align:right;margin-top:4px"><span class="sum-edit" onclick="editEvent('${ev.id}',4)">Upravit →</span></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+            <span style="color:var(--text);font-weight:500">Follow-up</span>
+            <span style="color:var(--muted)">${fuDone} / ${FOLLOWUP_ITEMS.length}</span>
+          </div>
+          <div class="sum-bar">
+            <div class="sum-bar-fill" style="background:var(--electric);width:${Math.round(fuDone/FOLLOWUP_ITEMS.length*100)}%"></div>
+          </div>
+          <div style="text-align:right;margin-top:4px"><span class="sum-edit" onclick="editEvent('${ev.id}',6)">Upravit →</span></div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="sum-section sum-full">
+        <div class="sum-section-title">
+          Poznámky a doporučení
+          <span class="sum-edit" onclick="editEvent('${ev.id}',7)">Upravit →</span>
+        </div>
+        ${ev.recommendation ? `<div style="font-size:13px;color:var(--text2);line-height:1.6">${ev.recommendation}</div>`
+          : '<div style="font-size:12px;color:var(--muted)">Zatím žádné poznámky — přidej je v dashboardu.</div>'}
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="sum-actions">
+      <button class="btn-next" onclick="editEvent('${ev.id}',${ev.step})" style="flex:1">
+        Pokračovat v kroku ${ev.step} →
+      </button>
+      <button class="btn-back" onclick="editEvent('${ev.id}',0)" style="flex:none;padding:13px 18px">
+        Začít od začátku
+      </button>
+    </div>
+  `;
+
   return wrap;
 }
 
