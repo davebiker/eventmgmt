@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0E3A2F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Event Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;0,700;1,300&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f7f4;
+  --surface:#ffffff;
+  --surface2:#e8f2ed;
+  --surface3:#d6ebe2;
+  --border:#c2ddd4;
+  --bh:#8bbfb0;
+  --text:#0a1f18;
+  --text2:#1a3a2e;
+  --muted:#4a7a68;
+  --emerald:#0E3A2F;
+  --emerald-mid:#174d3e;
+  --emerald-lt:#d6ebe2;
+  --electric:#78FAAE;
+  --electric-dk:#3dd988;
+  --electric-lt:#edfff5;
+  --yellow:#7a4f00;
+  --yellow-lt:#fef3c7;
+  --red:#8b1a1a;
+  --red-lt:#fee2e2;
+  --pink:#8b1750;
+  --pink-lt:#fce7f3;
+  --r:10px;--rs:6px;--rl:14px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;min-height:100%;overflow-x:hidden}
+button,a{font-family:inherit;cursor:pointer;border:none;outline:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+input,textarea,select{font-family:inherit;outline:none;-webkit-tap-highlight-color:transparent;font-size:16px}
+
+/* ── SHELL ── */
+#app{max-width:560px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom, 20px)}
+
+/* ── TOP BAR ── */
+.topbar{padding:14px 20px 0;display:flex;align-items:center;justify-content:space-between}
+.logo-mark{display:flex;align-items:center;gap:8px}
+.logo-sq{width:30px;height:30px;background:var(--emerald);border-radius:5px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(14,58,47,.3)}
+.logo-sq span{color:var(--electric);font-size:9px;font-weight:800;letter-spacing:.3px}
+.logo-text{font-family:'Fraunces',serif;font-size:15px;font-weight:600;color:var(--text)}
+
+/* ── PROGRESS ── */
+.prog-wrap{padding:14px 20px 0}
+.prog-track{height:3px;background:var(--surface3);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;background:var(--electric);border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.step-labels{display:flex;justify-content:space-between;margin-top:6px}
+.step-dot{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.step-dot-circle{width:7px;height:7px;border-radius:50%;background:var(--surface3);transition:all .3s}
+.step-dot-circle.done{background:var(--electric)}
+.step-dot-circle.active{background:var(--electric);box-shadow:0 0 0 3px rgba(120,250,174,.3)}
+.step-dot-label{font-size:9px;color:var(--muted);letter-spacing:.3px;text-align:center;white-space:nowrap}
+.step-dot.active .step-dot-label{color:var(--emerald);font-weight:600}
+
+/* ── CONTENT ── */
+.content{padding:20px 20px 0;flex:1;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── STEP HEADER ── */
+.step-phase{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:4px}
+.step-title{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.2;color:var(--text);margin-bottom:6px}
+.step-desc{font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:22px}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px}
+
+/* ── FORM ── */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block}
+.inp{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:10px 13px;color:var(--text);font-size:16px;transition:border-color .15s,box-shadow .15s}
+.inp:focus{border-color:var(--emerald);background:#fff;box-shadow:0 0 0 3px rgba(120,250,174,.2)}
+.inp::placeholder{color:#7aaa99;font-size:15px}
+textarea.inp{resize:vertical;min-height:80px;line-height:1.5}
+select.inp{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a7a68' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+select.inp option{background:#fff;color:#0a1f18}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── PILLS ── */
+.pill-group{display:flex;gap:7px;flex-wrap:wrap}
+.pill{padding:8px 14px;border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);transition:all .15s;white-space:nowrap;user-select:none;-webkit-user-select:none;touch-action:manipulation;min-height:38px;display:inline-flex;align-items:center}
+.pill.on,.pill.on-green{border-color:var(--emerald);background:var(--electric-lt);color:var(--emerald);font-weight:600}
+.pill.on-yellow{border-color:#d97706;background:var(--yellow-lt);color:var(--yellow)}
+.pill:active{opacity:.75}
+
+/* ── TYPE CARDS ── */
+.type-cards{display:flex;flex-direction:column;gap:10px}
+.type-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--rl);padding:14px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:flex-start;gap:12px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.type-card:active{opacity:.8}
+@media(hover:hover){.type-card:hover{border-color:var(--bh);box-shadow:0 2px 8px rgba(0,0,0,.07)}}
+.type-card.on{border-color:var(--emerald);background:var(--electric-lt);box-shadow:0 2px 12px rgba(14,58,47,.1)}
+.type-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--surface3)}
+.type-card.on .type-ico{background:rgba(120,250,174,.25)}
+.type-body h4{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
+.type-body p{font-size:12px;color:var(--muted);line-height:1.4}
+.type-card.on .type-body h4{color:var(--emerald)}
+
+/* ── Q&A ── */
+.qa-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.qa-row:last-child{border-bottom:none;padding-bottom:0}
+.qa-q{font-size:13px;color:var(--text);line-height:1.4;flex:1}
+.qa-opts{display:flex;gap:5px;flex-shrink:0}
+.qa-btn{padding:7px 11px;border-radius:6px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s;cursor:pointer;min-height:38px;touch-action:manipulation}
+.qa-btn.on-y{border-color:var(--emerald);background:var(--electric-lt);color:var(--emerald)}
+.qa-btn.on-n{border-color:#ef4444;background:var(--red-lt);color:var(--red)}
+.qa-btn.on-m{border-color:#d97706;background:var(--yellow-lt);color:var(--yellow)}
+.qa-btn:active{opacity:.7}
+
+/* ── KPI ROWS ── */
+.kpi-row{display:flex;align-items:center;gap:0;padding:10px 0;border-bottom:1px solid var(--border)}
+.kpi-row:last-child{border-bottom:none;padding-bottom:0}
+.kpi-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
+.kpi-sub{font-size:11px;color:var(--muted);font-weight:400;display:block;margin-top:1px}
+.kpi-input{width:68px;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:6px 9px;color:var(--text);font-size:16px;font-weight:600;text-align:center;transition:all .15s;flex-shrink:0}
+.kpi-input:focus{border-color:var(--emerald);background:#fff}
+.kpi-unit{font-size:11px;color:var(--muted);white-space:nowrap;width:80px;padding-left:8px;flex-shrink:0}
+
+/* ── CHECKLIST ── */
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;touch-action:manipulation;min-height:44px}
+.check-item:last-child{border-bottom:none;padding-bottom:0}
+.check-box{width:22px;height:22px;border-radius:5px;border:2px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px}
+.check-item.done .check-box{background:var(--emerald);border-color:var(--emerald)}
+.check-tick{color:#fff;font-size:12px;font-weight:700;opacity:0;transition:opacity .15s}
+.check-item.done .check-tick{opacity:1}
+.check-text{font-size:13px;color:var(--text);line-height:1.4;flex:1}
+.check-item.done .check-text{color:var(--muted);text-decoration:line-through}
+.check-tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;flex-shrink:0;margin-top:2px}
+.tag-must{background:#fee2e2;color:var(--red)}
+.tag-nice{background:var(--electric-lt);color:var(--emerald)}
+
+/* ── CONTACTS ── */
+.contact-list{margin-bottom:12px}
+.ccard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.ccard-body{flex:1;min-width:0}
+.ccard-name{font-size:14px;font-weight:700;color:var(--text)}
+.ccard-meta{font-size:12px;color:var(--muted);margin-top:1px}
+.ccard-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.bdg{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px}
+.bdg-A{background:var(--electric-lt);color:var(--emerald)}
+.bdg-B{background:var(--yellow-lt);color:var(--yellow)}
+.bdg-C{background:var(--surface3);color:var(--muted)}
+.bdg-d{background:rgba(120,250,174,.2);color:var(--emerald-mid)}
+.bdg-opp{background:var(--pink-lt);color:var(--pink)}
+.btn-del{padding:7px 10px;border-radius:var(--rs);background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:11px;flex-shrink:0;min-height:38px;touch-action:manipulation}
+.btn-del:active{color:var(--red);border-color:#fca5a5}
+.add-form{background:var(--surface2);border:1.5px dashed var(--border);border-radius:var(--r);padding:14px}
+.depth-row{display:flex;gap:7px}
+.dchip{flex:1;padding:10px 5px;border-radius:var(--r);cursor:pointer;border:1.5px solid var(--border);background:var(--surface);text-align:center;transition:all .15s;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.dchip.on{border-color:var(--emerald);background:var(--electric-lt)}
+.dchip-ico{font-size:20px}
+.dchip-lbl{font-size:10px;font-weight:600;color:var(--muted);margin-top:3px}
+.dchip.on .dchip-lbl{color:var(--emerald)}
+.dchip:active{opacity:.7}
+
+/* ── DASHBOARD ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.stat-val{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;font-weight:500}
+.kpi-result-row{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.kpi-result-row:last-child{border-bottom:none;padding-bottom:0}
+.kpi-result-label{flex:1;font-size:13px;color:var(--text);font-weight:500}
+.kpi-result-plan{font-size:12px;color:var(--muted);min-width:50px;text-align:right}
+.kpi-result-actual{width:68px}
+.kpi-result-actual input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--rs);padding:5px 8px;color:var(--text);font-size:16px;font-weight:600;text-align:center}
+.kpi-result-actual input:focus{border-color:var(--emerald)}
+.kpi-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;flex-shrink:0}
+.kpi-over{background:var(--electric-lt);color:var(--emerald)}
+.kpi-under{background:var(--red-lt);color:var(--red)}
+.kpi-eq{background:var(--surface3);color:var(--muted)}
+.score-ring{width:80px;height:80px;border-radius:50%;background:var(--surface);border:3px solid var(--border);display:flex;align-items:center;justify-content:center;flex-direction:column;margin:0 auto 12px}
+.score-num{font-family:'Fraunces',serif;font-size:22px;font-weight:700}
+.score-sub{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── GO / NO-GO ── */
+.gng-wrap{display:flex;gap:10px;margin-top:4px}
+.gng-btn{flex:1;padding:14px;border-radius:var(--r);font-size:14px;font-weight:700;border:2px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .2s;text-align:center;touch-action:manipulation;min-height:50px}
+.gng-btn.go{border-color:var(--emerald);background:var(--electric-lt);color:var(--emerald)}
+.gng-btn.nogo{border-color:#ef4444;background:var(--red-lt);color:var(--red)}
+.gng-btn:active{opacity:.75}
+
+/* ── PHASE BADGE ── */
+.phase-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:14px}
+.phase-before{background:var(--electric-lt);color:var(--emerald)}
+.phase-during{background:#fef3c7;color:#7a4f00}
+.phase-after{background:rgba(120,250,174,.15);color:var(--emerald-mid)}
+
+/* ── NAV ── */
+.nav-bar{padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));display:flex;gap:10px;align-items:center}
+.btn-back{padding:13px 18px;border-radius:var(--r);background:var(--surface);border:1.5px solid var(--border);color:var(--text2);font-size:14px;font-weight:600;transition:all .15s;min-height:50px;touch-action:manipulation}
+.btn-back:active{background:var(--surface2)}
+.btn-next{flex:1;padding:14px;border-radius:var(--r);background:var(--emerald);color:var(--electric);font-size:15px;font-weight:700;transition:all .2s;box-shadow:0 2px 10px rgba(14,58,47,.25);min-height:50px;touch-action:manipulation}
+@media(hover:hover){.btn-next:hover{background:#071f18;box-shadow:0 4px 18px rgba(14,58,47,.35);transform:translateY(-1px)}}
+.btn-next:active{opacity:.8;transform:scale(.98)}
+.btn-next:disabled{background:var(--surface3);color:var(--muted);cursor:not-allowed;box-shadow:none;transform:none}
+.btn-finish{flex:1;padding:14px;border-radius:var(--r);background:var(--emerald);color:var(--electric);font-size:15px;font-weight:700;transition:all .2s;box-shadow:0 2px 10px rgba(14,58,47,.22);min-height:50px;touch-action:manipulation}
+.btn-finish:active{opacity:.8}
+
+/* ── INTRO ── */
+.intro-hero{background:var(--emerald);border-radius:var(--rl);padding:28px 24px;margin-bottom:16px;color:#fff;position:relative;overflow:hidden}
+.intro-hero::before{content:'';position:absolute;right:-20px;top:-20px;width:140px;height:140px;background:rgba(120,250,174,.08);border-radius:50%}
+.intro-hero::after{content:'';position:absolute;right:30px;bottom:-40px;width:90px;height:90px;background:rgba(120,250,174,.05);border-radius:50%}
+.intro-hero-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:var(--electric);margin-bottom:6px;opacity:.9}
+.intro-hero-title{font-family:'Fraunces',serif;font-size:26px;font-weight:600;line-height:1.15;margin-bottom:8px}
+.intro-hero-sub{font-size:13px;opacity:.8;line-height:1.55}
+.intro-steps{display:flex;flex-direction:column;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;border:1px solid var(--border)}
+.intro-step-row{background:var(--surface);padding:11px 14px;display:flex;align-items:center;gap:12px}
+.intro-step-num{width:24px;height:24px;border-radius:50%;background:rgba(120,250,174,.2);color:var(--emerald);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.intro-step-info h5{font-size:13px;font-weight:700;color:var(--text);margin-bottom:1px}
+.intro-step-info p{font-size:11px;color:var(--muted)}
+.intro-step-when{font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;margin-left:auto;white-space:nowrap}
+
+/* ── SCORE CARD ── */
+.score-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.score-card h3{font-family:'Fraunces',serif;font-size:16px;font-weight:600;margin-bottom:4px}
+.score-card p{font-size:13px;color:var(--text2);line-height:1.5}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(10,31,24,.5);z-index:200;display:flex;align-items:flex-end;animation:fadeIn .2s;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:560px;margin:0 auto;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px));max-height:92vh;overflow-y:auto;animation:slideUp .25s cubic-bezier(.4,0,.2,1);-webkit-overflow-scrolling:touch}
+@keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px}
+.modal-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--text);margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:16px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 18px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.12);animation:fadeUp .2s}
+.toast.ok{border-color:var(--electric);color:var(--emerald);background:var(--electric-lt)}
+
+/* ── EVENT LIST CARD ── */
+.ev-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .2s,border-color .2s;box-shadow:0 1px 4px rgba(0,0,0,.05);touch-action:manipulation}
+@media(hover:hover){.ev-card:hover{box-shadow:0 4px 16px rgba(14,58,47,.1);border-color:var(--bh)}}
+.ev-card:active{opacity:.85}
+
+/* ── RESPONSIVE ── */
+@media(max-width:380px){
+  .step-title{font-size:22px}
+  .intro-hero-title{font-size:22px}
+  .step-dot-label{display:none}
+  .kpi-unit{width:60px}
+  .stat-val{font-size:20px}
+}
+
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+const STEPS = [
+  {id:'intro',   label:'Úvod',     phase:''},
+  {id:'setup',   label:'Setup',    phase:'PŘED EVENTEM'},
+  {id:'decision',label:'Rozhodnutí',phase:'PŘED EVENTEM'},
+  {id:'kpi',     label:'KPI Plán', phase:'PŘED EVENTEM'},
+  {id:'prep',    label:'Příprava', phase:'PŘED EVENTEM'},
+  {id:'contacts',label:'Kontakty', phase:'BĚHEM EVENTU'},
+  {id:'followup',label:'Follow-up',phase:'PO EVENTU'},
+  {id:'dashboard',label:'Dashboard',phase:'PO EVENTU'},
+];
+
+const KPI_BY_TYPE = {
+  booth: [
+    {id:'booth_tier_a',    label:'Tier A kontakty',        sub:'decision makeři, partneři, média', unit:'kontaktů', plan:5},
+    {id:'booth_conv',      label:'Konverze na schůzku',    sub:'% kontaktů → dohodnutá schůzka', unit:'%', plan:40},
+    {id:'booth_total',     label:'Celkem kontaktů',        sub:'všechny úrovně', unit:'kontaktů', plan:30},
+    {id:'booth_demos',     label:'Demo prezentací',        sub:'živé demo u stanku', unit:'prezentací', plan:10},
+    {id:'booth_followup48',label:'Follow-up do 48h',       sub:'% Tier A kontaktovaných', unit:'%', plan:100},
+  ],
+  stage: [
+    {id:'stage_audience',  label:'Velikost audience',      sub:'lidé v sále + online', unit:'osob', plan:200},
+    {id:'stage_media',     label:'Earned media zmínky',    sub:'články / posty zmiňující naši značku', unit:'zmínek', plan:5},
+    {id:'stage_inbound',   label:'Inbound kontakty',       sub:'lidi kteří nás osloví sami', unit:'kontaktů', plan:8},
+    {id:'stage_linkedin',  label:'LinkedIn dosah talku',   sub:'impressions na post z eventu', unit:'impressions', plan:3000},
+    {id:'stage_recording', label:'Zhlédnutí záznamu',      sub:'po zveřejnění záznamu', unit:'zhlédnutí', plan:500},
+  ],
+  visitor: [
+    {id:'visitor_tier_a',  label:'Tier A next steps',      sub:'kontakty s konkrétním výstupem', unit:'kontaktů', plan:3},
+    {id:'visitor_meetings',label:'Dohodnuté schůzky',      sub:'bilaterální meetingy', unit:'schůzek', plan:4},
+    {id:'visitor_brief',   label:'Knowledge brief',        sub:'1 = sepsán do týdne', unit:'(0/1)', plan:1},
+    {id:'visitor_leads',   label:'Nové příležitosti',      sub:'identifikované partnery / projekty', unit:'příležitostí', plan:2},
+  ],
+};
+
+const CHECKLIST_BY_TYPE = {
+  booth: [
+    {id:'b1', text:'Grafika a roll-upy objednány a schváleny', must:true},
+    {id:'b2', text:'Demo funkční a otestované na místě', must:true},
+    {id:'b3', text:'Tým proškolen — každý ví co říkat', must:true},
+    {id:'b4', text:'Vizitky a materiály připraveny', must:true},
+    {id:'b5', text:'Systém sběru kontaktů nastaven (tato aplikace)', must:true},
+    {id:'b6', text:'Schůzky domluveny předem s klíčovými kontakty', must:false},
+    {id:'b7', text:'Dress code a brand guidelines připomenuty týmu', must:false},
+    {id:'b8', text:'Catering / občerstvení u stanku zajištěno', must:false},
+  ],
+  stage: [
+    {id:'s1', text:'Prezentace hotová a schválená', must:true},
+    {id:'s2', text:'Rehearsal proběhl alespoň jednou', must:true},
+    {id:'s3', text:'Záznam přednášky dohodnut s organizátorem', must:true},
+    {id:'s4', text:'LinkedIn announcement naplánován (den před)', must:false},
+    {id:'s5', text:'Speaker brief pro moderátora odeslán', must:true},
+    {id:'s6', text:'Klíčové quotes připraveny pro social media', must:false},
+    {id:'s7', text:'Timing a délka talku potvrzeny', must:true},
+  ],
+  visitor: [
+    {id:'v1', text:'Seznam cílových kontaktů připraven (min. 5)', must:true},
+    {id:'v2', text:'Schůzky s klíčovými lidmi domluveny předem', must:true},
+    {id:'v3', text:'Briefing pro tým — kdo, proč, co chceme', must:true},
+    {id:'v4', text:'Cíle každého člena týmu definovány', must:true},
+    {id:'v5', text:'Program eventu prostudován, klíčové sessiony označeny', must:false},
+    {id:'v6', text:'Vizitky připraveny', must:true},
+    {id:'v7', text:'Follow-up šablona připravena', must:false},
+  ],
+};
+
+const FOLLOWUP_ITEMS = [
+  {id:'f1', text:'Kontakty zadány do systému (do 24 hodin)', must:true},
+  {id:'f2', text:'Tier A kontakty osloveny (email / LinkedIn, do 48h)', must:true},
+  {id:'f3', text:'Tier B kontakty osloveny (do 5 dnů)', must:true},
+  {id:'f4', text:'LinkedIn post o eventu publikován', must:false},
+  {id:'f5', text:'Interní knowledge brief sepsán a sdílen', must:false},
+  {id:'f6', text:'Dohodnuté schůzky naplánovány v kalendáři', must:true},
+  {id:'f7', text:'KPI výsledky zaznamenány v dashboardu', must:true},
+  {id:'f8', text:'Doporučení pro příští rok zaznamenáno', must:false},
+];
+
+const META_QS = [
+  {id:'q1', text:'Víme přesně proč jedeme — máme konkrétní cíl?'},
+  {id:'q2', text:'Jsou tam lidé, kteří mohou posunout naše cíle?'},
+  {id:'q3', text:'Odpovídá event našemu brand positioning a cílové skupině?'},
+  {id:'q4', text:'Přichází event ve správný čas — máme co aktuálního říct nebo ukázat?'},
+  {id:'q5', text:'Máme co říct nebo ukázat — nejsme "prázdné ruce"?'},
+  {id:'q6', text:'Máme dostatek kapacity se dobře připravit?'},
+  {id:'q7', text:'Máme kapacitu výstupy po eventu zpracovat a follow-up dotáhnout?'},
+  {id:'q8', text:'Byli jsme na tomto eventu dřív — a stálo to za to?'},
+];
+
+// ════════════════════════════════════════════
+// MULTI-EVENT STATE + LOCALSTORAGE
+// ════════════════════════════════════════════
+let EVENTS = [];
+let CURRENT_ID = null;
+let S = null;
+
+function newEventState(id) {
+  return {
+    id,
+    createdAt: Date.now(),
+    step: 0,
+    event: {name:'', dateFrom:'', dateTo:'', city:'', type:'', budget:'', audience:''},
+    metaWhy: '',
+    metaAnswers: {},
+    goNogo: '',
+    types: [],
+    kpiPlan: {},
+    prepDone: {},
+    contacts: [],
+    contactForm: {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:''},
+    fuDone: {},
+    kpiActual: {},
+    toast: null,
+  };
+}
+
+function save() {
+  const toSave = EVENTS.map(e => { const c = {...e}; delete c.toast; return c; });
+  localStorage.setItem('em_events', JSON.stringify(toSave));
+}
+
+function loadAll() {
+  try { EVENTS = JSON.parse(localStorage.getItem('em_events') || '[]'); }
+  catch { EVENTS = []; }
+}
+
+function openEvent(id) {
+  CURRENT_ID = id;
+  S = EVENTS.find(e => e.id === id);
+  if (!S.toast) S.toast = null;
+  r();
+}
+
+function newEvent() {
+  const id = Date.now().toString();
+  const ev = newEventState(id);
+  EVENTS.push(ev);
+  save();
+  openEvent(id);
+}
+
+function deleteEvent(id) {
+  if (!confirm('Opravdu smazat tento event?')) return;
+  EVENTS = EVENTS.filter(e => e.id !== id);
+  save();
+  backToList();
+}
+
+function backToList() {
+  CURRENT_ID = null;
+  S = null;
+  r();
+}
+
+function eventStatus(ev) {
+  if (!ev.event.name) return {label:'Nový', color:'var(--surface3)', text:'var(--muted)'};
+  if (ev.step <= 4) return {label:'Příprava', color:'#fef3c7', text:'#7a4f00'};
+  if (ev.step === 5) return {label:'Probíhá', color:'var(--electric-lt)', text:'var(--emerald)'};
+  if (ev.goNogo === 'nogo') return {label:'Zrušeno', color:'var(--red-lt)', text:'var(--red)'};
+  return {label:'Dokončeno', color:'var(--emerald-lt)', text:'var(--green)'};
+}
+
+
+// ════════════════════════════════════════════
+// RENDER ENGINE
+// ════════════════════════════════════════════
+function r() {
+  if (S) save();
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+
+  // LIST VIEW
+  if (!CURRENT_ID) {
+    app.appendChild(screenList());
+    return;
+  }
+
+  // EVENT VIEW
+  app.appendChild(mkTopBar());
+  if (S.step > 0) app.appendChild(mkProgress());
+  const content = document.createElement('div');
+  content.className = 'content';
+  content.appendChild(SCREENS[S.step]());
+  app.appendChild(content);
+  app.appendChild(mkNav());
+  if (S.toast) {
+    const t = document.createElement('div');
+    t.className = `toast ${S.toast.type}`;
+    t.textContent = S.toast.msg;
+    app.appendChild(t);
+    setTimeout(() => { S.toast = null; r(); }, 2200);
+  }
+}
+
+function mkTopBar() {
+  const d = document.createElement('div');
+  d.className = 'topbar';
+  d.innerHTML = `
+    <button onclick="backToList()" style="
+      background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
+      cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
+      ← Eventy
+    </button>
+    <button onclick="openContactModal()" style="
+      display:flex;align-items:center;gap:5px;
+      background:var(--emerald);color:var(--electric);
+      border:none;border-radius:8px;padding:7px 12px;
+      font-size:12px;font-weight:700;cursor:pointer;
+      box-shadow:0 2px 6px rgba(14,58,47,.2);">
+      <span style="font-size:15px">+</span> Kontakt
+    </button>
+  `;
+  return d;
+}
+
+function mkProgress() {
+  const pct = Math.round((S.step / (STEPS.length - 1)) * 100);
+  const d = document.createElement('div');
+  d.className = 'prog-wrap';
+  d.innerHTML = `
+    <div class="prog-track"><div class="prog-fill" style="width:${pct}%"></div></div>
+    <div class="step-labels">
+      ${STEPS.map((s, i) => `
+        <div class="step-dot ${i === S.step ? 'active' : ''}">
+          <div class="step-dot-circle ${i < S.step ? 'done' : i === S.step ? 'active' : ''}"></div>
+          <div class="step-dot-label">${s.label}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  return d;
+}
+
+function mkNav() {
+  const d = document.createElement('div');
+  d.className = 'nav-bar';
+  const last = S.step === STEPS.length - 1;
+  const first = S.step === 0;
+
+  if (first) {
+    d.innerHTML = `<button class="btn-next" onclick="next()" style="flex:1">Začít →</button>`;
+    return d;
+  }
+
+  d.innerHTML = `
+    <button class="btn-back" onclick="back()">← Zpět</button>
+    ${last
+      ? `<button class="btn-finish" onclick="toast('Uloženo ✓','ok')">Uložit</button><button class="btn-back" onclick="backToList()" style="margin-left:0">← Lista</button>`
+      : `<button class="btn-next" onclick="next()">${S.step === STEPS.length - 2 ? 'Zobrazit dashboard →' : 'Pokračovat →'}</button>`
+    }
+  `;
+  return d;
+}
+
+function canAdvance() { return true; }
+function next() { if (S.step < STEPS.length - 1) { S.step++; save(); r(); window.scrollTo(0,0); } }
+function back() { if (S.step > 0) { S.step--; save(); r(); window.scrollTo(0,0); } }
+function toast(msg, type='ok') { S.toast = {msg, type}; r(); }
+window.newEvent = newEvent;
+window.openEvent = openEvent;
+window.deleteEvent = deleteEvent;
+window.backToList = backToList;
+
+// ════════════════════════════════════════════
+// LIST SCREEN
+// ════════════════════════════════════════════
+function screenList() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:60px';
+
+  // header
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:20px 20px 0';
+  header.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="logo-mark">
+        <div class="logo-sq"><span>EM</span></div>
+        <span class="logo-text">Event Management</span>
+      </div>
+      <button onclick="newEvent()" style="
+        display:flex;align-items:center;gap:5px;
+        background:var(--emerald);color:var(--electric);
+        border:none;border-radius:8px;padding:9px 14px;
+        font-size:13px;font-weight:700;cursor:pointer;
+        box-shadow:0 2px 8px rgba(14,58,47,.2);">
+        + Nový event
+      </button>
+    </div>
+  `;
+  wrap.appendChild(header);
+
+  const content = document.createElement('div');
+  content.style.cssText = 'padding:0 20px';
+
+  if (EVENTS.length === 0) {
+    content.innerHTML = `
+      <div style="text-align:center;padding:60px 20px">
+        <div style="font-size:48px;margin-bottom:12px">📅</div>
+        <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--text);margin-bottom:8px">Žádné eventy</div>
+        <div style="font-size:14px;color:var(--muted);margin-bottom:24px">Začni přidáním prvního eventu</div>
+        <button onclick="newEvent()" style="
+          background:var(--emerald);color:var(--electric);border:none;
+          border-radius:10px;padding:13px 28px;font-size:14px;font-weight:700;cursor:pointer;">
+          + Přidat první event
+        </button>
+      </div>
+    `;
+  } else {
+    // sort newest first
+    const sorted = [...EVENTS].sort((a,b) => (b.event.dateFrom||b.createdAt) > (a.event.dateFrom||a.createdAt) ? 1 : -1);
+    content.innerHTML = `
+      <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">
+        ${EVENTS.length} event${EVENTS.length>1?'y/ů':''}
+      </div>
+      ${sorted.map(ev => {
+        const st = eventStatus(ev);
+        const tierA = ev.contacts.filter(c=>c.tier==='A').length;
+        const yesCount = Object.values(ev.metaAnswers).filter(v=>v==='y').length;
+        const typeLabels = ev.types.map(t=>({booth:'🏪 Booth',stage:'🎤 Stage',visitor:'👁 Visitor'}[t])).join(' + ');
+        return `
+        <div class="ev-card"
+          onclick="openEvent('${ev.id}')">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:8px">
+            <div style="font-size:16px;font-weight:700;color:var(--text);font-family:'Fraunces',serif;flex:1">
+              ${ev.event.name || 'Bez názvu'}
+            </div>
+            <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+              <span style="font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;background:${st.color};color:${st.text}">${st.label}</span>
+              <button onclick="(function(e){e.stopPropagation();deleteEvent('${ev.id}');})(event)" style="
+                background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:4px;min-height:36px"
+                title="Smazat">✕</button>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;display:flex;gap:10px;flex-wrap:wrap">
+            ${ev.event.city ? `<span>📍 ${ev.event.city}</span>` : ''}
+            ${ev.event.dateFrom ? `<span>📅 ${ev.event.dateFrom}</span>` : ''}
+            ${ev.event.type ? `<span>🏷 ${ev.event.type}</span>` : ''}
+          </div>
+          ${typeLabels ? `<div style="font-size:11px;color:var(--emerald);font-weight:600;margin-bottom:8px">${typeLabels}</div>` : ''}
+          <div style="display:flex;gap:8px">
+            ${tierA > 0 ? `<span style="font-size:11px;background:var(--electric-lt);color:var(--emerald);padding:3px 9px;border-radius:8px;font-weight:600">⭐ ${tierA} Tier A</span>` : ''}
+            ${ev.contacts.length > 0 ? `<span style="font-size:11px;background:var(--surface2);color:var(--muted);padding:3px 9px;border-radius:8px;font-weight:600">👥 ${ev.contacts.length} kontaktů</span>` : ''}
+            ${yesCount > 0 ? `<span style="font-size:11px;background:var(--surface2);color:var(--muted);padding:3px 9px;border-radius:8px;font-weight:600">✓ ${yesCount}/8</span>` : ''}
+          </div>
+          <div style="margin-top:10px;height:3px;background:var(--surface3);border-radius:3px;overflow:hidden">
+            <div style="height:100%;background:var(--electric);width:${Math.round(ev.step/(STEPS.length-1)*100)}%;border-radius:3px;transition:width .3s"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Krok ${ev.step} / ${STEPS.length-1}</div>
+        </div>`;
+      }).join('')}
+    `;
+  }
+
+  wrap.appendChild(content);
+  return wrap;
+}
+
+// ════════════════════════════════════════════
+// SCREENS
+// ════════════════════════════════════════════
+const SCREENS = [
+  screenIntro,
+  screenSetup,
+  screenDecision,
+  screenKPI,
+  screenPrep,
+  screenContacts,
+  screenFollowup,
+  screenDashboard,
+];
+
+// ── 0: INTRO ──
+function screenIntro() {
+  const d = document.createElement('div');
+  const stepMeta = [
+    {n:1, title:'Setup eventu',      desc:'Základní info a kontext',       when:'Před'},
+    {n:2, title:'Rozhodovací otázky',desc:'Meta otázka + go/no-go',        when:'Před'},
+    {n:3, title:'KPI Plán',          desc:'Typ účasti a cílové metriky',   when:'Před'},
+    {n:4, title:'Příprava',          desc:'Checklist před odjezdem',       when:'Před'},
+    {n:5, title:'Sběr kontaktů',     desc:'Formulář přímo na eventu',      when:'Během'},
+    {n:6, title:'Follow-up',         desc:'Checklist akcí po eventu',      when:'Po'},
+    {n:7, title:'Dashboard',         desc:'Výsledky a plán vs. skutečnost',when:'Po'},
+  ];
+  const whenColor = {Před:'#e4f5dc::#2d6820', Během:'#fef3c7::#7a4f00', Po:'#d4f0cb::#1a5c10'};
+  d.innerHTML = `
+    <div style="margin-bottom:20px">
+      <div class="intro-hero">
+        <div class="intro-hero-label">Event Management</div>
+        <div class="intro-hero-title">Celý event lifecycle<br>na jednom místě</div>
+        <div class="intro-hero-sub">Od rozhodnutí jet až po vyhodnocení výsledků. Strukturovaný proces pro každý typ účasti.</div>
+      </div>
+      <div class="intro-steps">
+        ${stepMeta.map(s => {
+          const [bg, col] = whenColor[s.when].split('::');
+          return `
+            <div class="intro-step-row">
+              <div class="intro-step-num">${s.n}</div>
+              <div class="intro-step-info">
+                <h5>${s.title}</h5>
+                <p>${s.desc}</p>
+              </div>
+              <div class="intro-step-when" style="background:${bg};color:${col}">${s.when}</div>
+            </div>`;
+        }).join('')}
+      </div>
+
+      <div style="margin-top:16px">
+        <div style="font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:10px">Typy účasti</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${[
+            {ico:'🏪', title:'Booth / Stanek',      desc:'Aktivní prezentace a sběr leadů', kpi:'Tier A leady · konverze na schůzku · demo prezentace'},
+            {ico:'🎤', title:'Stage / Speaker slot', desc:'Thought leadership a brand dosah',  kpi:'Audience · earned media · inbound kontakty · LinkedIn'},
+            {ico:'👁',  title:'Visitor only',         desc:'Networking, scouting, bilaterální schůzky', kpi:'Next steps · knowledge brief · nové příležitosti'},
+          ].map(t=>`
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;gap:12px;align-items:flex-start">
+              <div style="font-size:22px;flex-shrink:0;margin-top:2px">${t.ico}</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">${t.title}</div>
+                <div style="font-size:12px;color:var(--text2);margin-bottom:4px">${t.desc}</div>
+                <div style="font-size:11px;color:var(--muted)">${t.kpi}</div>
+              </div>
+            </div>`).join('')}
+          <div style="background:rgba(120,250,174,.1);border:1px solid rgba(120,250,174,.3);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--emerald)">
+            💡 Typy lze kombinovat — např. Booth + Stage má vlastní sadu KPI
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  return d;
+}
+
+// ── 1: SETUP ──
+function screenSetup() {
+  const d = document.createElement('div');
+  const ev = S.event;
+  const TYPES = ['Konference','Summit','Výstava / veletrh','Media event','Networking','Hackathon','Workshop','Roadshow','Jiné'];
+  d.innerHTML = `
+    <div class="phase-badge phase-before">📅 Před eventem</div>
+    <div class="step-phase">Krok 1</div>
+    <div class="step-title">Setup eventu</div>
+    <div class="step-desc">Vyplň základní informace o eventu. Tato data se zobrazí ve všech dalších krocích a v dashboardu.</div>
+
+    <div class="card">
+      <div class="card-title">Identifikace</div>
+      <div class="field">
+        <label class="field-label">Název eventu *</label>
+        <input class="inp" placeholder="např. Web Summit 2025" value="${ev.name}" oninput="S.event.name=this.value;save()">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="field-label">Datum od</label>
+          <input type="date" class="inp" value="${ev.dateFrom}" oninput="S.event.dateFrom=this.value">
+        </div>
+        <div class="field">
+          <label class="field-label">Datum do</label>
+          <input type="date" class="inp" value="${ev.dateTo}" oninput="S.event.dateTo=this.value">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Město / místo konání</label>
+        <input class="inp" placeholder="např. Lisabon, Portugalsko" value="${ev.city}" oninput="S.event.city=this.value">
+      </div>
+      <div class="field">
+        <label class="field-label">Typ akce *</label>
+        <select class="inp" onchange="S.event.type=this.value;save()">
+          <option value="" disabled ${!ev.type?'selected':''}>Vyber typ...</option>
+          ${TYPES.map(t=>`<option value="${t}" ${ev.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Kontext</div>
+      <div class="row2">
+        <div class="field">
+          <label class="field-label">Odhadovaný rozpočet (CZK)</label>
+          <input class="inp" placeholder="např. 150 000" value="${ev.budget}" oninput="S.event.budget=this.value">
+        </div>
+        <div class="field">
+          <label class="field-label">Počet účastníků eventu</label>
+          <input class="inp" placeholder="např. 2 000" value="${ev.audience}" oninput="S.event.audience=this.value">
+        </div>
+      </div>
+    </div>
+  `;
+  return d;
+}
+
+// ── 2: DECISION ──
+function screenDecision() {
+  const d = document.createElement('div');
+  const yesCount = Object.values(S.metaAnswers).filter(v=>v==='y').length;
+  const noCount  = Object.values(S.metaAnswers).filter(v=>v==='n').length;
+  const total    = Object.keys(S.metaAnswers).length;
+
+  d.innerHTML = `
+    <div class="phase-badge phase-before">📅 Před eventem</div>
+    <div class="step-phase">Krok 2</div>
+    <div class="step-title">Rozhodovací otázky</div>
+    <div class="step-desc">Než se rozhodneš jet, odpověz na klíčové otázky. Pak udělej vědomé go / no-go rozhodnutí.</div>
+
+    <div class="card">
+      <div class="card-title">Meta otázka</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:8px">Proč jedeme na tento event zrovna my?</div>
+      <textarea class="inp" placeholder="Co konkrétně chceme získat? Kdo tam bude? Co přinášíme my?.." oninput="S.metaWhy=this.value">${S.metaWhy}</textarea>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Checklist rozhodnutí</div>
+      ${META_QS.map(q => `
+        <div class="qa-row">
+          <div class="qa-q">${q.text}</div>
+          <div class="qa-opts">
+            <button class="qa-btn ${S.metaAnswers[q.id]==='y'?'on-y':''}" onclick="setQA('${q.id}','y')">Ano</button>
+            <button class="qa-btn ${S.metaAnswers[q.id]==='m'?'on-m':''}" onclick="setQA('${q.id}','m')">?</button>
+            <button class="qa-btn ${S.metaAnswers[q.id]==='n'?'on-n':''}" onclick="setQA('${q.id}','n')">Ne</button>
+          </div>
+        </div>
+      `).join('')}
+      ${total > 0 ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">
+        Odpovězeno: ${total}/6 · ✅ ${yesCount}× Ano · ⚠️ ${noCount}× Ne
+      </div>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Matice typů účasti</div>
+      <table class="matrix-table">
+        <tr><th>Typ</th><th>Primární hodnota</th><th>Hlavní KPI</th></tr>
+        <tr><td class="typ">🏪 Booth</td><td>Objem + kvalifikace leadů</td><td>Tier A leady, konverze</td></tr>
+        <tr><td class="typ">🎤 Stage</td><td>Myšlenková autorita</td><td>Reach, earned media</td></tr>
+        <tr><td class="typ">👁 Visitor</td><td>Znalosti + vztahy</td><td>Next steps, knowledge brief</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Go / No-go rozhodnutí *</div>
+      <div class="gng-wrap">
+        <button class="gng-btn ${S.goNogo==='go'?'go':''}" onclick="S.goNogo='go';save();r()">✅ Jedeme!</button>
+        <button class="gng-btn ${S.goNogo==='nogo'?'nogo':''}" onclick="S.goNogo='nogo';save();r()">❌ Nejedeme</button>
+      </div>
+      ${S.goNogo==='nogo'?`<div style="margin-top:10px;padding:10px;background:var(--red-lt);border-radius:var(--r);font-size:13px;color:var(--red)">
+        Rozhodnutí zaznamenáno. Můžeš přesto pokračovat a vyplnit důvody v poznámkách.
+      </div>`:''}
+    </div>
+  `;
+  return d;
+}
+window.setQA = (id, val) => {
+  S.metaAnswers[id] = S.metaAnswers[id] === val ? undefined : val;
+  r();
+};
+
+// ── 3: KPI ──
+function screenKPI() {
+  const d = document.createElement('div');
+  const types = S.types;
+  const kpis = types.flatMap(t => KPI_BY_TYPE[t] || []);
+
+  // init defaults
+  kpis.forEach(k => { if (S.kpiPlan[k.id] === undefined) S.kpiPlan[k.id] = k.plan; });
+
+  d.innerHTML = `
+    <div class="phase-badge phase-before">📅 Před eventem</div>
+    <div class="step-phase">Krok 3</div>
+    <div class="step-title">Typ účasti & KPI Plán</div>
+    <div class="step-desc">Vyber jeden nebo více typů účasti — KPI se sloučí automaticky. Uprav cílové hodnoty dle vlastního odhadu.</div>
+
+    <div class="card">
+      <div class="card-title">Typ účasti — vyber vše co platí</div>
+      <div class="type-cards">
+        <div class="type-card ${types.includes('booth')?'on':''}" onclick="toggleType('booth')">
+          <div class="type-ico">🏪</div>
+          <div class="type-body">
+            <h4>Booth / Stanek</h4>
+            <p>Aktivní prezentace, sběr leadů, demo produktu nebo konceptu</p>
+          </div>
+          ${types.includes('booth') ? '<div style="margin-left:auto;color:var(--emerald);font-size:18px;flex-shrink:0">✓</div>' : ''}
+        </div>
+        <div class="type-card ${types.includes('stage')?'on':''}" onclick="toggleType('stage')">
+          <div class="type-ico">🎤</div>
+          <div class="type-body">
+            <h4>Stage / Speaker slot</h4>
+            <p>Přednáška, panel, keynote — budujeme thought leadership</p>
+          </div>
+          ${types.includes('stage') ? '<div style="margin-left:auto;color:var(--emerald);font-size:18px;flex-shrink:0">✓</div>' : ''}
+        </div>
+        <div class="type-card ${types.includes('visitor')?'on':''}" onclick="toggleType('visitor')">
+          <div class="type-ico">👁</div>
+          <div class="type-body">
+            <h4>Visitor only</h4>
+            <p>Networking, scouting trendů, bilaterální schůzky bez vlastního programu</p>
+          </div>
+          ${types.includes('visitor') ? '<div style="margin-left:auto;color:var(--emerald);font-size:18px;flex-shrink:0">✓</div>' : ''}
+        </div>
+      </div>
+    </div>
+
+    ${kpis.length ? `
+    <div class="card">
+      <div class="card-title">Cílové KPI — nastav plán</div>
+      ${kpis.map(k => `
+        <div class="kpi-row">
+          <div class="kpi-label">${k.label}<span class="kpi-sub">${k.sub}</span></div>
+          <input class="kpi-input" type="number" value="${S.kpiPlan[k.id] ?? k.plan}" oninput="S.kpiPlan['${k.id}']=+this.value" min="0">
+          <span class="kpi-unit">${k.unit}</span>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+  return d;
+}
+window.toggleType = t => {
+  const i = S.types.indexOf(t);
+  if (i === -1) S.types.push(t);
+  else S.types.splice(i, 1);
+  S.kpiPlan = {};
+  r();
+};
+
+// ── 4: PREP CHECKLIST ──
+function screenPrep() {
+  const d = document.createElement('div');
+  // merge checklists from all selected types, deduplicate by id
+  const seen = new Set();
+  const items = (S.types.length ? S.types : ['visitor'])
+    .flatMap(t => (CHECKLIST_BY_TYPE[t] || []))
+    .filter(i => { if (seen.has(i.id)) return false; seen.add(i.id); return true; });
+  const done = items.filter(i => S.prepDone[i.id]).length;
+
+  d.innerHTML = `
+    <div class="phase-badge phase-before">📅 Před eventem</div>
+    <div class="step-phase">Krok 4</div>
+    <div class="step-title">Přípravný checklist</div>
+    <div class="step-desc">Odškrtej vše před odjezdem. Červené položky jsou kritické — bez nich risikuješ neúspěch.</div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Checklist</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600">${done} / ${items.length}</div>
+      </div>
+      <div style="height:4px;background:var(--surface3);border-radius:4px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;background:var(--green-mid);border-radius:4px;width:${items.length?Math.round(done/items.length*100):0}%;transition:width .3s"></div>
+      </div>
+      ${items.map(i => `
+        <div class="check-item ${S.prepDone[i.id]?'done':''}" onclick="togglePrep('${i.id}')">
+          <div class="check-box"><span class="check-tick">✓</span></div>
+          <div class="check-text">${i.text}</div>
+          <div class="check-tag ${i.must?'tag-must':'tag-nice'}">${i.must?'Nutné':'Vhodné'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  return d;
+}
+window.togglePrep = id => { S.prepDone[id] = !S.prepDone[id]; r(); };
+
+// ── 5: CONTACTS ──
+function screenContacts() {
+  const d = document.createElement('div');
+  const f = S.contactForm;
+  const evContacts = S.contacts;
+  const canAdd = f.name && f.tier && f.depth;
+
+  d.innerHTML = `
+    <div class="phase-badge phase-during">⚡ Během eventu</div>
+    <div class="step-phase">Krok 5</div>
+    <div class="step-title">Sběr kontaktů</div>
+    <div class="step-desc">Přidávej kontakty přímo na eventu. Každý záznam tě pak uvidíš v dashboardu.</div>
+
+    <div class="contact-list" id="clist">
+      ${evContacts.length === 0 ? `<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px">Zatím žádné kontakty — přidej první níže.</div>` :
+        evContacts.map((c,i) => {
+          const TIERS = {A:'bdg-A',B:'bdg-B',C:'bdg-C'};
+          const DEPTHS = {1:'🤝 Vizitka',2:'💬 Rozhovor',3:'🎯 Next step'};
+          return `<div class="ccard">
+            <div class="ccard-body">
+              <div class="ccard-name">${c.name}</div>
+              <div class="ccard-meta">${[c.role,c.company].filter(Boolean).join(' · ')}</div>
+              <div class="ccard-badges">
+                <span class="bdg ${TIERS[c.tier]||'bdg-C'}">Tier ${c.tier}</span>
+                <span class="bdg bdg-d">${DEPTHS[c.depth]||'—'}</span>
+                ${c.opp?`<span class="bdg bdg-opp">${c.opp}</span>`:''}
+              </div>
+            </div>
+            <button class="btn-del" onclick="delContact(${i})">✕</button>
+          </div>`;
+        }).join('')
+      }
+    </div>
+
+    <div class="add-form">
+      <div class="add-form-title">+ Nový kontakt</div>
+      <div class="field"><input class="inp" placeholder="Jméno a příjmení *" value="${f.name}" oninput="S.contactForm.name=this.value"></div>
+      <div class="field"><input type="email" class="inp" placeholder="Email" value="${f.email}" oninput="S.contactForm.email=this.value"></div>
+      <div class="row2">
+        <div class="field"><input class="inp" placeholder="Firma" value="${f.company}" oninput="S.contactForm.company=this.value"></div>
+        <div class="field"><input class="inp" placeholder="Pozice" value="${f.role}" oninput="S.contactForm.role=this.value"></div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div class="field-label" style="margin-bottom:6px">Tier *</div>
+        <div class="pill-group">
+          <div class="pill ${f.tier==='A'?'on-green':''}" onclick="S.contactForm.tier='A';r()">Tier A — Decision maker</div>
+          <div class="pill ${f.tier==='B'?'on':''}" onclick="S.contactForm.tier='B';r()">Tier B — Relevantní</div>
+          <div class="pill ${f.tier==='C'?'':''}" style="${f.tier==='C'?'border-color:var(--bh);background:var(--surface3)':''}" onclick="S.contactForm.tier='C';r()">Tier C — Networking</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div class="field-label" style="margin-bottom:6px">Hloubka vztahu *</div>
+        <div class="depth-row">
+          <div class="dchip ${f.depth===1?'on':''}" onclick="S.contactForm.depth=1;r()"><div class="dchip-ico">🤝</div><div class="dchip-lbl">Vizitka</div></div>
+          <div class="dchip ${f.depth===2?'on':''}" onclick="S.contactForm.depth=2;r()"><div class="dchip-ico">💬</div><div class="dchip-lbl">Rozhovor</div></div>
+          <div class="dchip ${f.depth===3?'on':''}" onclick="S.contactForm.depth=3;r()"><div class="dchip-ico">🎯</div><div class="dchip-lbl">Next step</div></div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px">
+        <div class="field-label" style="margin-bottom:6px">Příležitost</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${[
+            {v:'Dohodnutá schůzka', ico:'📅'},
+            {v:'Intro do firmy',     ico:'🤝'},
+            {v:'Zájem o spolupráci', ico:'💡'},
+            {v:'Zmínka v médiu',     ico:'📰'},
+            {v:'Partnership / pilot',ico:'🚀'},
+            {v:'Jiné',               ico:'📌'},
+          ].map(o=>`
+            <div onclick="S.contactForm.opp=S.contactForm.opp==='${o.v}'?'':'${o.v}';r()" style="
+              display:flex;align-items:center;gap:5px;
+              padding:6px 11px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;
+              border:1.5px solid ${f.opp===o.v?'var(--emerald)':'var(--border)'};
+              background:${f.opp===o.v?'var(--electric-lt)':'var(--surface)'};
+              color:${f.opp===o.v?'var(--emerald)':'var(--text2)'};
+              transition:all .15s;">
+              <span>${o.ico}</span><span>${o.v}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <button class="btn-next" ${!canAdd?'disabled':''} onclick="addContact()" style="margin-top:4px">Přidat kontakt</button>
+    </div>
+  `;
+  return d;
+}
+
+window.addContact = () => {
+  const f = S.contactForm;
+  if (!f.name || !f.tier || !f.depth) return;
+  S.contacts.push({...f});
+  S.contactForm = {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:''};
+  toast(`${f.name} přidán ✓`,'ok');
+  // if modal open, re-render modal; otherwise re-render page
+  if (document.querySelector('.modal-overlay')) renderModal();
+  else r();
+};
+window.delContact = i => { S.contacts.splice(i,1); r(); };
+
+window.openContactModal = () => { renderModal(); };
+window.closeModal = () => {
+  const m = document.getElementById('contact-modal');
+  if (m) m.remove();
+};
+
+function renderModal() {
+  // remove existing
+  const existing = document.getElementById('contact-modal');
+  if (existing) existing.remove();
+
+  const f = S.contactForm;
+  const canAdd = f.name && f.tier && f.depth;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'contact-modal';
+  overlay.onclick = e => { if (e.target === overlay) closeModal(); };
+
+  overlay.innerHTML = `
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Přidat kontakt</div>
+      <div class="modal-sub">${S.contacts.length} kontaktů přidáno${S.event.name ? ' · ' + S.event.name : ''}</div>
+
+      <div class="field"><input class="inp" placeholder="Jméno a příjmení *" value="${f.name}" oninput="S.contactForm.name=this.value"></div>
+      <div class="field"><input type="email" class="inp" placeholder="Email" value="${f.email}" oninput="S.contactForm.email=this.value"></div>
+      <div class="row2" style="margin-bottom:12px">
+        <div class="field"><input class="inp" placeholder="Firma" value="${f.company}" oninput="S.contactForm.company=this.value"></div>
+        <div class="field"><input class="inp" placeholder="Pozice" value="${f.role}" oninput="S.contactForm.role=this.value"></div>
+      </div>
+
+      <div class="field-label" style="margin-bottom:6px">Tier *</div>
+      <div class="pill-group" style="margin-bottom:14px">
+        <div class="pill ${f.tier==='A'?'on-green':''}" onclick="S.contactForm.tier='A';renderModal()">Tier A — Decision maker</div>
+        <div class="pill ${f.tier==='B'?'on':''}" onclick="S.contactForm.tier='B';renderModal()">Tier B — Relevantní</div>
+        <div class="pill ${f.tier==='C'?'':''}" style="${f.tier==='C'?'border-color:var(--bh);background:var(--surface3)':''}" onclick="S.contactForm.tier='C';renderModal()">Tier C — Networking</div>
+      </div>
+
+      <div class="field-label" style="margin-bottom:6px">Hloubka vztahu *</div>
+      <div class="depth-row" style="margin-bottom:14px">
+        <div class="dchip ${f.depth===1?'on':''}" onclick="S.contactForm.depth=1;renderModal()"><div class="dchip-ico">🤝</div><div class="dchip-lbl">Vizitka</div></div>
+        <div class="dchip ${f.depth===2?'on':''}" onclick="S.contactForm.depth=2;renderModal()"><div class="dchip-ico">💬</div><div class="dchip-lbl">Rozhovor</div></div>
+        <div class="dchip ${f.depth===3?'on':''}" onclick="S.contactForm.depth=3;renderModal()"><div class="dchip-ico">🎯</div><div class="dchip-lbl">Next step</div></div>
+      </div>
+
+      <div class="field-label" style="margin-bottom:6px">Příležitost</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        ${[
+          {v:'Dohodnutá schůzka', ico:'📅'},
+          {v:'Intro do firmy',     ico:'🤝'},
+          {v:'Zájem o spolupráci', ico:'💡'},
+          {v:'Zmínka v médiu',     ico:'📰'},
+          {v:'Partnership / pilot',ico:'🚀'},
+          {v:'Jiné',               ico:'📌'},
+        ].map(o=>`
+          <div onclick="S.contactForm.opp=S.contactForm.opp==='${o.v}'?'':'${o.v}';renderModal()" style="
+            display:flex;align-items:center;gap:5px;
+            padding:6px 11px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;
+            border:1.5px solid ${f.opp===o.v?'var(--emerald)':'var(--border)'};
+            background:${f.opp===o.v?'var(--electric-lt)':'var(--surface)'};
+            color:${f.opp===o.v?'var(--emerald)':'var(--text2)'};
+            transition:all .15s;">
+            <span>${o.ico}</span><span>${o.v}</span>
+          </div>`).join('')}
+      </div>
+
+      <div style="display:flex;gap:8px">
+        <button class="btn-back" onclick="closeModal()" style="padding:13px 20px">Zavřít</button>
+        <button class="btn-next" ${!canAdd?'disabled':''} onclick="addContact()" style="flex:1">Přidat kontakt</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  // focus first input
+  setTimeout(() => overlay.querySelector('input')?.focus(), 100);
+}
+
+// ── 6: FOLLOW-UP ──
+function screenFollowup() {
+  const d = document.createElement('div');
+  const done = FOLLOWUP_ITEMS.filter(i => S.fuDone[i.id]).length;
+
+  d.innerHTML = `
+    <div class="phase-badge phase-after">✅ Po eventu</div>
+    <div class="step-phase">Krok 6</div>
+    <div class="step-title">Follow-up checklist</div>
+    <div class="step-desc">Prvních 48 hodin po eventu rozhoduje. Odškrtej každou akci ihned po splnění.</div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div class="card-title" style="margin-bottom:0">Akce po eventu</div>
+        <div style="font-size:12px;color:var(--muted);font-weight:600">${done} / ${FOLLOWUP_ITEMS.length}</div>
+      </div>
+      <div style="height:4px;background:var(--surface3);border-radius:4px;margin-bottom:14px;overflow:hidden">
+        <div style="height:100%;background:var(--accent);border-radius:4px;width:${Math.round(done/FOLLOWUP_ITEMS.length*100)}%;transition:width .3s"></div>
+      </div>
+      ${FOLLOWUP_ITEMS.map(i => `
+        <div class="check-item ${S.fuDone[i.id]?'done':''}" onclick="toggleFU('${i.id}')">
+          <div class="check-box"><span class="check-tick">✓</span></div>
+          <div class="check-text">${i.text}</div>
+          <div class="check-tag ${i.must?'tag-must':'tag-nice'}">${i.must?'Nutné':'Vhodné'}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Kontakty ke zpracování</div>
+      ${S.contacts.length === 0
+        ? `<div style="font-size:13px;color:var(--muted)">Žádné kontakty ze sberu — přidej je v kroku 5.</div>`
+        : S.contacts.filter(c=>c.tier==='A').length > 0
+          ? `<div style="font-size:13px;color:var(--red);font-weight:600;margin-bottom:4px">⏰ Tier A kontakty čekají na follow-up:</div>
+             ${S.contacts.filter(c=>c.tier==='A').map(c=>`
+               <div style="padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">
+                 <strong>${c.name}</strong> <span style="color:var(--muted)">${c.company?'· '+c.company:''}</span>
+               </div>`).join('')}`
+          : `<div style="font-size:13px;color:var(--emerald);font-weight:600">✓ Všechny Tier A kontakty zpracovány</div>`
+      }
+    </div>
+  `;
+  return d;
+}
+window.toggleFU = id => { S.fuDone[id] = !S.fuDone[id]; r(); };
+
+// ── 7: DASHBOARD ──
+function screenDashboard() {
+  const d = document.createElement('div');
+  const kpis = S.types.flatMap(t => KPI_BY_TYPE[t] || []);
+  const cs = S.contacts;
+  const tierA = cs.filter(c=>c.tier==='A').length;
+  const depth3 = cs.filter(c=>c.depth===3).length;
+  const fuDoneCount = Object.values(S.fuDone).filter(Boolean).length;
+  const prepDoneCount = Object.values(S.prepDone).filter(Boolean).length;
+  const yesCount = Object.values(S.metaAnswers).filter(v=>v==='y').length;
+
+  // init actuals
+  kpis.forEach(k => { if (S.kpiActual[k.id] === undefined) S.kpiActual[k.id] = ''; });
+
+  // score
+  const answered = kpis.filter(k => S.kpiActual[k.id] !== '' && S.kpiActual[k.id] !== undefined);
+  const score = answered.length
+    ? Math.round(answered.reduce((acc, k) => {
+        const plan = S.kpiPlan[k.id] || k.plan;
+        const actual = +S.kpiActual[k.id];
+        return acc + Math.min(actual / plan, 1.5);
+      }, 0) / answered.length * 100)
+    : null;
+
+  const scoreColor = score === null ? 'var(--muted)' : score >= 90 ? 'var(--emerald)' : score >= 60 ? '#d97706' : '#dc2626';
+  const scoreLabel = score === null ? '—' : score >= 90 ? 'Výborný' : score >= 60 ? 'OK' : 'Slabý';
+
+  d.innerHTML = `
+    <div class="phase-badge phase-after">✅ Po eventu</div>
+    <div class="step-phase">Krok 7</div>
+    <div class="step-title">${S.event.name || 'Dashboard eventu'}</div>
+    <div class="step-desc">${[
+      S.types.map(t=>({booth:'🏪 Booth',stage:'🎤 Stage',visitor:'👁 Visitor'}[t])).join(' + '),
+      S.event.city, S.event.dateFrom].filter(Boolean).join(' · ')}</div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--emerald)">${tierA}</div>
+        <div class="stat-lbl">Tier A</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--emerald)">${cs.length}</div>
+        <div class="stat-lbl">Kontaktů</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" style="color:var(--electric-dk)">${depth3}</div>
+        <div class="stat-lbl">Next steps 🎯</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="score-ring" style="border-color:${scoreColor}">
+          <div class="score-num" style="color:${scoreColor}">${score !== null ? score+'%' : '?'}</div>
+          <div class="score-sub">${scoreLabel}</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Celkové skóre eventu</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">
+            ${score === null ? 'Zadej skutečné výsledky KPI níže pro výpočet skóre.' :
+              score >= 90 ? 'Vynikající výsledky — cíle splněny nebo překročeny.' :
+              score >= 60 ? 'Dobré výsledky s prostorem pro zlepšení.' :
+              'Cíle nebyly splněny — zanalyzuj co se stalo.'}
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">
+            Follow-up: ${fuDoneCount}/${FOLLOWUP_ITEMS.length} · Příprava: ${prepDoneCount} položek
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${kpis.length ? `
+    <div class="card">
+      <div class="card-title">KPI — Plán vs. Skutečnost</div>
+      ${kpis.map(k => {
+        const plan = S.kpiPlan[k.id] ?? k.plan;
+        const actual = S.kpiActual[k.id];
+        const ratio = actual !== '' && actual !== undefined ? +actual / plan : null;
+        const pillCls = ratio === null ? 'kpi-eq' : ratio >= 1 ? 'kpi-over' : ratio >= 0.7 ? 'kpi-eq' : 'kpi-under';
+        const pillTxt = ratio === null ? '—' : ratio >= 1 ? '✓ Splněno' : ratio >= 0.7 ? '≈ Téměř' : '✗ Pod cílem';
+        return `
+          <div class="kpi-result-row">
+            <div class="kpi-result-label">${k.label}<span class="kpi-sub">${k.sub}</span></div>
+            <div class="kpi-result-plan" style="font-size:11px;color:var(--muted)">cíl: ${plan} ${k.unit}</div>
+            <div class="kpi-result-actual">
+              <input type="number" placeholder="?" value="${actual !== undefined ? actual : ''}"
+                oninput="S.kpiActual['${k.id}']=this.value;rerenderScore()" min="0">
+            </div>
+            <div class="kpi-pill ${pillCls}">${pillTxt}</div>
+          </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    ${cs.length ? `
+    <div class="card">
+      <div class="card-title">Kontakty podle tieru</div>
+      ${['A','B','C'].map(tier => {
+        const tc = cs.filter(c=>c.tier===tier);
+        if (!tc.length) return '';
+        return `<div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px">TIER ${tier}</div>
+          ${tc.map(c=>`
+            <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600">${c.name}</div>
+                <div style="font-size:11px;color:var(--muted)">${[c.role,c.company].filter(Boolean).join(' · ')}</div>
+              </div>
+              ${c.opp?`<span class="bdg bdg-opp" style="font-size:10px">${c.opp}</span>`:''}
+            </div>`).join('')}
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <div class="card">
+      <div class="card-title">Doporučení pro příště</div>
+      <textarea class="inp" placeholder="Co bychom udělali jinak? Stojí za to jet znovu příští rok?.." oninput="S.recommendation=this.value">${S.recommendation||''}</textarea>
+    </div>
+  `;
+  return d;
+}
+
+window.rerenderScore = () => {
+  // just rerender the dashboard without animation glitch
+  const content = document.querySelector('.content');
+  if (content) {
+    content.innerHTML = '';
+    content.style.animation = 'none';
+    content.appendChild(screenDashboard());
+  }
+};
+
+
+// ════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════
+loadAll();
+r();
+</script>
+</body>
+</html>
