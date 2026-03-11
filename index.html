@@ -438,7 +438,8 @@ const META_QS = [
 let EVENTS = [];
 let CURRENT_ID = null;
 let S = null;
-let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit' | 'dashboard'
+let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit' | 'dashboard' | 'addcontact'
+let CONTACT_FORM = {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:'',eventId:''};
 
 function newEventState(id) {
   return {
@@ -553,6 +554,12 @@ function r() {
   const app = document.getElementById('app');
   app.innerHTML = '';
 
+  // ADD CONTACT (full page)
+  if (VIEW_MODE === 'addcontact') {
+    app.appendChild(screenAddContact());
+    return;
+  }
+
   // CROSS-EVENT DASHBOARD
   if (VIEW_MODE === 'dashboard') {
     app.appendChild(screenCrossDashboard());
@@ -597,14 +604,7 @@ function mkTopBar() {
       cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
       ← Přehled
     </button>
-    <button onclick="openContactModal()" style="
-      display:flex;align-items:center;gap:5px;
-      background:var(--emerald);color:var(--electric);
-      border:none;border-radius:8px;padding:7px 12px;
-      font-size:12px;font-weight:700;cursor:pointer;
-      box-shadow:0 2px 6px rgba(14,58,47,.2);">
-      <span style="font-size:15px">+</span> Kontakt
-    </button>
+    <span style="font-size:12px;color:var(--muted);font-weight:600">${S.event.name || 'Event'}</span>
   `;
   return d;
 }
@@ -675,6 +675,35 @@ function openDashboard() {
   r();
 }
 
+function openAddContact() {
+  CONTACT_FORM = {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:'',eventId: EVENTS.length ? EVENTS[EVENTS.length-1].id : ''};
+  VIEW_MODE = 'addcontact';
+  r();
+}
+
+function submitContactFromHP() {
+  const f = CONTACT_FORM;
+  if (!f.name || !f.tier || !f.depth || !f.eventId) return;
+  const ev = EVENTS.find(e => e.id === f.eventId);
+  if (!ev) return;
+  ev.contacts.push({name:f.name, email:f.email, company:f.company, role:f.role, tier:f.tier, depth:f.depth, opp:f.opp});
+  save();
+  // reset for next
+  const prevEventId = f.eventId;
+  CONTACT_FORM = {name:'',email:'',company:'',role:'',tier:'',depth:0,opp:'',eventId:prevEventId};
+  VIEW_MODE = 'addcontact';
+  r();
+  toast(f.name + ' přidán ✓','ok');
+}
+
+function setCF(key, val) {
+  CONTACT_FORM[key] = CONTACT_FORM[key] === val && (key === 'opp') ? '' : val;
+  r();
+}
+
+window.openAddContact = openAddContact;
+window.submitContactFromHP = submitContactFromHP;
+window.setCF = setCF;
 window.fmtNum = fmtNum;
 window.parseNum = parseNum;
 window.newEvent = newEvent;
@@ -684,6 +713,104 @@ window.deleteEvent = deleteEvent;
 window.backToList = backToList;
 window.backToSummary = backToSummary;
 window.openDashboard = openDashboard;
+
+// ════════════════════════════════════════════
+// ADD CONTACT (FULL PAGE)
+// ════════════════════════════════════════════
+function screenAddContact() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'max-width:560px;margin:0 auto;min-height:100vh;padding:0 20px 60px';
+  const f = CONTACT_FORM;
+  const canAdd = f.name && f.tier && f.depth && f.eventId;
+
+  // count contacts added to selected event
+  const selEv = EVENTS.find(e => e.id === f.eventId);
+  const addedCount = selEv ? selEv.contacts.length : 0;
+
+  wrap.innerHTML = `
+    <div style="padding:16px 0 8px">
+      <button onclick="backToList()" style="
+        background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
+        cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px">
+        ← Zpět na eventy
+      </button>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div class="step-title" style="margin-bottom:4px">Přidat kontakt</div>
+      <div class="step-desc" style="margin-bottom:0">${addedCount} kontaktů${selEv ? ' · '+selEv.event.name : ''}</div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">Přiřadit k eventu *</div>
+      <select class="inp" onchange="CONTACT_FORM.eventId=this.value">
+        <option value="" disabled ${!f.eventId?'selected':''}>Vyber event...</option>
+        ${EVENTS.map(ev => `<option value="${ev.id}" ${f.eventId===ev.id?'selected':''}>${ev.event.name || 'Bez názvu'}${ev.event.city ? ' · '+ev.event.city : ''}</option>`).join('')}
+      </select>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">Kontaktní údaje</div>
+      <div class="field"><input class="inp" placeholder="Jméno a příjmení *" value="${f.name}" oninput="CONTACT_FORM.name=this.value"></div>
+      <div class="field"><input type="email" class="inp" placeholder="Email" value="${f.email}" oninput="CONTACT_FORM.email=this.value"></div>
+      <div class="row2">
+        <div class="field"><input class="inp" placeholder="Firma" value="${f.company}" oninput="CONTACT_FORM.company=this.value"></div>
+        <div class="field"><input class="inp" placeholder="Pozice" value="${f.role}" oninput="CONTACT_FORM.role=this.value"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title">Kvalifikace</div>
+      <div style="margin-bottom:14px">
+        <div class="field-label" style="margin-bottom:6px">Tier *</div>
+        <div class="pill-group">
+          <div class="pill ${f.tier==='A'?'on-green':''}" onclick="setCF('tier','A')">Tier A — Decision maker</div>
+          <div class="pill ${f.tier==='B'?'on':''}" onclick="setCF('tier','B')">Tier B — Relevantní</div>
+          <div class="pill ${f.tier==='C'?'':''}" style="${f.tier==='C'?'border-color:var(--bh);background:var(--surface3)':''}" onclick="setCF('tier','C')">Tier C — Networking</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div class="field-label" style="margin-bottom:6px">Hloubka vztahu *</div>
+        <div class="depth-row">
+          <div class="dchip ${f.depth===1?'on':''}" onclick="setCF('depth',1)"><div class="dchip-ico">🤝</div><div class="dchip-lbl">Vizitka</div></div>
+          <div class="dchip ${f.depth===2?'on':''}" onclick="setCF('depth',2)"><div class="dchip-ico">💬</div><div class="dchip-lbl">Rozhovor</div></div>
+          <div class="dchip ${f.depth===3?'on':''}" onclick="setCF('depth',3)"><div class="dchip-ico">🎯</div><div class="dchip-lbl">Next step</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="field-label" style="margin-bottom:6px">Příležitost</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${[
+            {v:'Dohodnutá schůzka', ico:'📅'},
+            {v:'Intro do firmy',     ico:'🤝'},
+            {v:'Zájem o spolupráci', ico:'💡'},
+            {v:'Zmínka v médiu',     ico:'📰'},
+            {v:'Partnership / pilot',ico:'🚀'},
+            {v:'Jiné',               ico:'📌'},
+          ].map(o=>`
+            <div onclick="setCF('opp','${o.v}')" style="
+              display:flex;align-items:center;gap:5px;
+              padding:6px 11px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;
+              border:1.5px solid ${f.opp===o.v?'var(--emerald)':'var(--border)'};
+              background:${f.opp===o.v?'var(--electric-lt)':'var(--surface)'};
+              color:${f.opp===o.v?'var(--emerald)':'var(--text2)'};
+              transition:all .15s;">
+              <span>${o.ico}</span><span>${o.v}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn-back" onclick="backToList()" style="padding:13px 20px">Zrušit</button>
+      <button class="btn-next" ${!canAdd?'disabled':''} onclick="submitContactFromHP()" style="flex:1">Přidat kontakt</button>
+    </div>
+  `;
+
+  return wrap;
+}
 
 // ════════════════════════════════════════════
 // CROSS-EVENT DASHBOARD
@@ -973,13 +1100,20 @@ function screenList() {
         <div class="logo-sq"><span>EM</span></div>
         <span class="logo-text">Event Management</span>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${EVENTS.length > 0 ? `<button onclick="openDashboard()" style="
           display:flex;align-items:center;gap:5px;
           background:var(--surface);color:var(--emerald);
           border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
           font-size:13px;font-weight:700;cursor:pointer;">
           📊 Dashboard
+        </button>` : ''}
+        ${EVENTS.length > 0 ? `<button onclick="openAddContact()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--surface);color:var(--emerald);
+          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+          font-size:13px;font-weight:700;cursor:pointer;">
+          + Kontakt
         </button>` : ''}
         <button onclick="newEvent()" style="
           display:flex;align-items:center;gap:5px;
