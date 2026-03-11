@@ -266,6 +266,42 @@ select.inp option{background:#fff;color:#0a1f18}
   .sum-grid .sum-full{grid-column:1/-1}
 }
 
+/* ── CROSS-EVENT DASHBOARD ── */
+.xd-wrap{max-width:1100px;margin:0 auto;min-height:100vh;padding:0 20px 60px}
+.xd-top{display:flex;align-items:center;justify-content:space-between;padding:16px 0 8px;flex-wrap:wrap;gap:10px}
+.xd-title{font-family:'Fraunces',serif;font-size:26px;font-weight:600;color:var(--text)}
+.xd-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.xd-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.xd-stat .xd-val{font-family:'Fraunces',serif;font-size:28px;font-weight:600;line-height:1}
+.xd-stat .xd-lbl{font-size:11px;color:var(--muted);margin-top:4px;font-weight:500}
+.xd-stat .xd-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.xd-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:16px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.xd-section-title{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:12px}
+.xd-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.xd-bar-label{font-size:12px;font-weight:600;color:var(--text);min-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xd-bar-track{flex:1;height:20px;background:var(--surface3);border-radius:4px;overflow:hidden;position:relative}
+.xd-bar-fill{height:100%;border-radius:4px;transition:width .4s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;min-width:2px}
+.xd-bar-val{font-size:10px;font-weight:700;color:#fff;white-space:nowrap}
+.xd-bar-out{font-size:11px;color:var(--muted);min-width:40px;text-align:right;font-weight:600}
+.xd-table{width:100%;border-collapse:collapse}
+.xd-table th{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:600;text-align:left;padding:6px 8px;border-bottom:2px solid var(--border)}
+.xd-table td{font-size:12px;color:var(--text);padding:8px;border-bottom:1px solid var(--border);vertical-align:middle}
+.xd-table tr:last-child td{border-bottom:none}
+.xd-table tr{cursor:pointer;transition:background .15s}
+.xd-table tr:hover td{background:var(--surface2)}
+.xd-type-chart{display:flex;gap:12px;flex-wrap:wrap}
+.xd-type-box{flex:1;min-width:140px;background:var(--surface2);border-radius:var(--r);padding:14px;text-align:center}
+.xd-type-box .xd-type-ico{font-size:24px;margin-bottom:4px}
+.xd-type-box .xd-type-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.xd-type-box .xd-type-stat{font-size:11px;color:var(--muted)}
+.xd-export{margin-top:16px;display:flex;gap:8px}
+@media(min-width:768px){
+  .xd-stats{grid-template-columns:repeat(4,1fr)}
+  .xd-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .xd-grid .xd-full{grid-column:1/-1}
+  .xd-title{font-size:32px}
+}
+
 /* ── RESPONSIVE ── */
 @media(max-width:380px){
   .step-title{font-size:22px}
@@ -402,7 +438,7 @@ const META_QS = [
 let EVENTS = [];
 let CURRENT_ID = null;
 let S = null;
-let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit'
+let VIEW_MODE = 'list'; // 'list' | 'summary' | 'edit' | 'dashboard'
 
 function newEventState(id) {
   return {
@@ -517,6 +553,12 @@ function r() {
   const app = document.getElementById('app');
   app.innerHTML = '';
 
+  // CROSS-EVENT DASHBOARD
+  if (VIEW_MODE === 'dashboard') {
+    app.appendChild(screenCrossDashboard());
+    return;
+  }
+
   // LIST VIEW
   if (!CURRENT_ID || VIEW_MODE === 'list') {
     app.appendChild(screenList());
@@ -610,12 +652,292 @@ function canAdvance() { return true; }
 function next() { if (S.step < STEPS.length - 1) { S.step++; save(); r(); window.scrollTo(0,0); } }
 function back() { if (S.step > 0) { S.step--; save(); r(); window.scrollTo(0,0); } }
 function toast(msg, type='ok') { S.toast = {msg, type}; r(); }
+function openDashboard() {
+  CURRENT_ID = null;
+  S = null;
+  VIEW_MODE = 'dashboard';
+  r();
+}
+
 window.newEvent = newEvent;
 window.openEvent = openEvent;
 window.editEvent = editEvent;
 window.deleteEvent = deleteEvent;
 window.backToList = backToList;
 window.backToSummary = backToSummary;
+window.openDashboard = openDashboard;
+
+// ════════════════════════════════════════════
+// CROSS-EVENT DASHBOARD
+// ════════════════════════════════════════════
+function screenCrossDashboard() {
+  const wrap = document.createElement('div');
+  wrap.className = 'xd-wrap';
+
+  const evs = [...EVENTS].sort((a,b) => (b.event.dateFrom||b.createdAt) > (a.event.dateFrom||a.createdAt) ? 1 : -1);
+  const totalContacts = evs.reduce((s,e) => s + e.contacts.length, 0);
+  const totalTierA = evs.reduce((s,e) => s + e.contacts.filter(c=>c.tier==='A').length, 0);
+  const totalBudget = evs.reduce((s,e) => s + (parseInt(String(e.event.budget).replace(/\s/g,''))||0), 0);
+
+  // KPI scores per event
+  function evScore(ev) {
+    const kpis = ev.types.flatMap(t => KPI_BY_TYPE[t] || []);
+    const answered = kpis.filter(k => ev.kpiActual[k.id] !== '' && ev.kpiActual[k.id] !== undefined);
+    if (!answered.length) return null;
+    return Math.round(answered.reduce((acc, k) => {
+      const plan = ev.kpiPlan[k.id] || k.plan;
+      return acc + Math.min((+ev.kpiActual[k.id]) / plan, 1.5);
+    }, 0) / answered.length * 100);
+  }
+
+  const scores = evs.map(e => ({ev:e, score:evScore(e)}));
+  const validScores = scores.filter(s => s.score !== null);
+  const avgScore = validScores.length ? Math.round(validScores.reduce((s,v) => s+v.score, 0) / validScores.length) : null;
+  const bestEvent = validScores.length ? validScores.reduce((a,b) => a.score >= b.score ? a : b) : null;
+
+  // type stats
+  const typeCounts = {booth:0, stage:0, visitor:0};
+  const typeContacts = {booth:0, stage:0, visitor:0};
+  evs.forEach(e => e.types.forEach(t => { typeCounts[t]++; typeContacts[t] += e.contacts.length; }));
+
+  // checklist stats
+  function prepProgress(ev) {
+    const seen = new Set();
+    const items = (ev.types.length ? ev.types : ['visitor'])
+      .flatMap(t => (CHECKLIST_BY_TYPE[t] || []))
+      .filter(i => { if (seen.has(i.id)) return false; seen.add(i.id); return true; });
+    const done = items.filter(i => ev.prepDone[i.id]).length;
+    return items.length ? Math.round(done/items.length*100) : 0;
+  }
+  function fuProgress(ev) {
+    const done = FOLLOWUP_ITEMS.filter(i => ev.fuDone[i.id]).length;
+    return Math.round(done/FOLLOWUP_ITEMS.length*100);
+  }
+
+  // Cost per Tier A
+  const costPerA = totalTierA > 0 && totalBudget > 0 ? Math.round(totalBudget / totalTierA) : null;
+
+  const avgScoreColor = avgScore === null ? 'var(--muted)' : avgScore >= 90 ? 'var(--emerald)' : avgScore >= 60 ? '#d97706' : '#dc2626';
+
+  // max score for bar normalization
+  const maxScore = validScores.length ? Math.max(...validScores.map(s=>s.score)) : 100;
+
+  wrap.innerHTML = `
+    <div class="xd-top">
+      <div>
+        <button onclick="backToList()" style="
+          background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;
+          cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;margin-bottom:6px">
+          ← Všechny eventy
+        </button>
+        <div class="xd-title">📊 Dashboard</div>
+      </div>
+      <button onclick="exportCSV()" style="
+        display:flex;align-items:center;gap:5px;
+        background:var(--surface);color:var(--emerald);
+        border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+        font-size:12px;font-weight:700;cursor:pointer;">
+        📥 Export CSV
+      </button>
+    </div>
+
+    <!-- Top stats -->
+    <div class="xd-stats">
+      <div class="xd-stat">
+        <div class="xd-val" style="color:var(--emerald)">${evs.length}</div>
+        <div class="xd-lbl">Eventů celkem</div>
+      </div>
+      <div class="xd-stat">
+        <div class="xd-val" style="color:var(--emerald)">${totalContacts}</div>
+        <div class="xd-lbl">Kontaktů celkem</div>
+        <div class="xd-sub">${totalTierA} Tier A</div>
+      </div>
+      <div class="xd-stat">
+        <div class="xd-val" style="color:${avgScoreColor}">${avgScore !== null ? avgScore+'%' : '—'}</div>
+        <div class="xd-lbl">Prům. KPI skóre</div>
+      </div>
+      <div class="xd-stat">
+        <div class="xd-val" style="color:var(--emerald)">${costPerA !== null ? costPerA.toLocaleString('cs') : '—'}</div>
+        <div class="xd-lbl">CZK / Tier A</div>
+        <div class="xd-sub">Cost per lead</div>
+      </div>
+    </div>
+
+    <div class="xd-grid">
+
+      <!-- KPI score comparison -->
+      <div class="xd-section">
+        <div class="xd-section-title">KPI Skóre — porovnání eventů</div>
+        ${scores.map(s => {
+          const sc = s.score;
+          const color = sc === null ? 'var(--surface3)' : sc >= 90 ? 'var(--electric-dk)' : sc >= 60 ? '#fbbf24' : '#f87171';
+          const w = sc !== null ? Math.max(sc / Math.max(maxScore, 100) * 100, 4) : 4;
+          return `<div class="xd-bar-row" onclick="openEvent('${s.ev.id}')" style="cursor:pointer">
+            <div class="xd-bar-label">${s.ev.event.name || 'Bez názvu'}</div>
+            <div class="xd-bar-track">
+              <div class="xd-bar-fill" style="background:${color};width:${w}%">
+                ${sc !== null ? `<span class="xd-bar-val">${sc}%</span>` : ''}
+              </div>
+            </div>
+            <div class="xd-bar-out">${sc !== null ? sc+'%' : '—'}</div>
+          </div>`;
+        }).join('')}
+        ${bestEvent ? `<div style="margin-top:8px;padding:8px 10px;background:var(--electric-lt);border-radius:var(--rs);font-size:12px;color:var(--emerald);font-weight:600">
+          🏆 Nejlepší: ${bestEvent.ev.event.name || 'Bez názvu'} (${bestEvent.score}%)
+        </div>` : ''}
+      </div>
+
+      <!-- Contacts comparison -->
+      <div class="xd-section">
+        <div class="xd-section-title">Kontakty — porovnání eventů</div>
+        ${evs.map(ev => {
+          const tA = ev.contacts.filter(c=>c.tier==='A').length;
+          const tB = ev.contacts.filter(c=>c.tier==='B').length;
+          const tC = ev.contacts.filter(c=>c.tier==='C').length;
+          const total = ev.contacts.length;
+          const maxC = Math.max(...evs.map(e=>e.contacts.length), 1);
+          return `<div class="xd-bar-row" onclick="openEvent('${ev.id}')" style="cursor:pointer">
+            <div class="xd-bar-label">${ev.event.name || 'Bez názvu'}</div>
+            <div class="xd-bar-track" style="display:flex;gap:0">
+              ${tA > 0 ? `<div style="width:${tA/maxC*100}%;height:100%;background:var(--emerald);border-radius:4px 0 0 4px"></div>` : ''}
+              ${tB > 0 ? `<div style="width:${tB/maxC*100}%;height:100%;background:#fbbf24"></div>` : ''}
+              ${tC > 0 ? `<div style="width:${tC/maxC*100}%;height:100%;background:var(--surface3);border-radius:0 4px 4px 0"></div>` : ''}
+            </div>
+            <div class="xd-bar-out">${total}</div>
+          </div>`;
+        }).join('')}
+        <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:var(--muted)">
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--emerald);border-radius:2px;vertical-align:middle"></span> Tier A</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:#fbbf24;border-radius:2px;vertical-align:middle"></span> Tier B</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--surface3);border-radius:2px;vertical-align:middle"></span> Tier C</span>
+        </div>
+      </div>
+
+      <!-- Type effectiveness -->
+      <div class="xd-section">
+        <div class="xd-section-title">Typ účasti — efektivita</div>
+        <div class="xd-type-chart">
+          ${[
+            {key:'booth', ico:'🏪', name:'Booth'},
+            {key:'stage', ico:'🎤', name:'Stage'},
+            {key:'visitor', ico:'👁', name:'Visitor'},
+          ].map(t => {
+            const cnt = typeCounts[t.key];
+            const con = typeContacts[t.key];
+            const avgC = cnt > 0 ? Math.round(con/cnt) : 0;
+            // avg score for this type
+            const typeEvs = evs.filter(e=>e.types.includes(t.key));
+            const typeScores = typeEvs.map(e=>evScore(e)).filter(s=>s!==null);
+            const typeAvg = typeScores.length ? Math.round(typeScores.reduce((a,b)=>a+b,0)/typeScores.length) : null;
+            return `<div class="xd-type-box">
+              <div class="xd-type-ico">${t.ico}</div>
+              <div class="xd-type-name">${t.name}</div>
+              <div class="xd-type-stat">${cnt}× použit</div>
+              <div class="xd-type-stat">Ø ${avgC} kontaktů</div>
+              <div class="xd-type-stat">Ø skóre: ${typeAvg !== null ? typeAvg+'%' : '—'}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- Checklist completion -->
+      <div class="xd-section">
+        <div class="xd-section-title">Dotažení checklistů</div>
+        ${evs.map(ev => {
+          const pp = prepProgress(ev);
+          const fp = fuProgress(ev);
+          return `<div style="margin-bottom:10px" onclick="openEvent('${ev.id}')" style="cursor:pointer">
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px">${ev.event.name || 'Bez názvu'}</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:3px">
+              <span style="font-size:10px;color:var(--muted);min-width:60px">Příprava</span>
+              <div style="flex:1;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+                <div style="height:100%;background:var(--electric);width:${pp}%;border-radius:4px"></div>
+              </div>
+              <span style="font-size:10px;color:var(--muted);min-width:30px;text-align:right">${pp}%</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span style="font-size:10px;color:var(--muted);min-width:60px">Follow-up</span>
+              <div style="flex:1;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden">
+                <div style="height:100%;background:var(--electric-dk);width:${fp}%;border-radius:4px"></div>
+              </div>
+              <span style="font-size:10px;color:var(--muted);min-width:30px;text-align:right">${fp}%</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- Full table -->
+      <div class="xd-section xd-full">
+        <div class="xd-section-title">Přehled všech eventů</div>
+        <div style="overflow-x:auto">
+          <table class="xd-table">
+            <thead>
+              <tr>
+                <th>Event</th>
+                <th>Datum</th>
+                <th>Město</th>
+                <th>Typ účasti</th>
+                <th>Kontakty</th>
+                <th>Tier A</th>
+                <th>KPI</th>
+                <th>Stav</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${evs.map(ev => {
+                const st = eventStatus(ev);
+                const sc = evScore(ev);
+                const typeLabels = ev.types.map(t=>({booth:'🏪',stage:'🎤',visitor:'👁'}[t])).join(' ');
+                return `<tr onclick="openEvent('${ev.id}')">
+                  <td style="font-weight:600">${ev.event.name || 'Bez názvu'}</td>
+                  <td style="white-space:nowrap">${ev.event.dateFrom || '—'}</td>
+                  <td>${ev.event.city || '—'}</td>
+                  <td>${typeLabels || '—'}</td>
+                  <td>${ev.contacts.length}</td>
+                  <td>${ev.contacts.filter(c=>c.tier==='A').length}</td>
+                  <td style="font-weight:600;color:${sc === null ? 'var(--muted)' : sc >= 90 ? 'var(--emerald)' : sc >= 60 ? '#d97706' : '#dc2626'}">${sc !== null ? sc+'%' : '—'}</td>
+                  <td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;background:${st.color};color:${st.text}">${st.label}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  `;
+
+  return wrap;
+}
+
+// CSV export
+window.exportCSV = function() {
+  const header = ['Event','Datum','Město','Typ akce','Typ účasti','Kontakty','Tier A','Tier B','Tier C','KPI skóre','Go/No-go','Rozpočet'];
+  const rows = EVENTS.map(ev => {
+    const kpis = ev.types.flatMap(t => KPI_BY_TYPE[t] || []);
+    const answered = kpis.filter(k => ev.kpiActual[k.id] !== '' && ev.kpiActual[k.id] !== undefined);
+    const score = answered.length
+      ? Math.round(answered.reduce((acc, k) => {
+          const plan = ev.kpiPlan[k.id] || k.plan;
+          return acc + Math.min((+ev.kpiActual[k.id]) / plan, 1.5);
+        }, 0) / answered.length * 100)
+      : '';
+    return [
+      ev.event.name, ev.event.dateFrom, ev.event.city, ev.event.type,
+      ev.types.join('+'), ev.contacts.length,
+      ev.contacts.filter(c=>c.tier==='A').length,
+      ev.contacts.filter(c=>c.tier==='B').length,
+      ev.contacts.filter(c=>c.tier==='C').length,
+      score, ev.goNogo, ev.event.budget
+    ];
+  });
+  const csv = [header, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'eventy-export.csv';
+  a.click(); URL.revokeObjectURL(url);
+};
 
 // ════════════════════════════════════════════
 // LIST SCREEN
@@ -633,14 +955,23 @@ function screenList() {
         <div class="logo-sq"><span>EM</span></div>
         <span class="logo-text">Event Management</span>
       </div>
-      <button onclick="newEvent()" style="
-        display:flex;align-items:center;gap:5px;
-        background:var(--emerald);color:var(--electric);
-        border:none;border-radius:8px;padding:9px 14px;
-        font-size:13px;font-weight:700;cursor:pointer;
-        box-shadow:0 2px 8px rgba(14,58,47,.2);">
-        + Nový event
-      </button>
+      <div style="display:flex;gap:8px">
+        ${EVENTS.length > 0 ? `<button onclick="openDashboard()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--surface);color:var(--emerald);
+          border:1.5px solid var(--border);border-radius:8px;padding:9px 14px;
+          font-size:13px;font-weight:700;cursor:pointer;">
+          📊 Dashboard
+        </button>` : ''}
+        <button onclick="newEvent()" style="
+          display:flex;align-items:center;gap:5px;
+          background:var(--emerald);color:var(--electric);
+          border:none;border-radius:8px;padding:9px 14px;
+          font-size:13px;font-weight:700;cursor:pointer;
+          box-shadow:0 2px 8px rgba(14,58,47,.2);">
+          + Nový event
+        </button>
+      </div>
     </div>
   `;
   wrap.appendChild(header);
